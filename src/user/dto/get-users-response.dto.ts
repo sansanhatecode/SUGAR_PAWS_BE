@@ -15,4 +15,7 @@ export class GetUsersResponseDto {
 
   @ApiProperty()
   role: string;
+
+  @ApiProperty()
+  isVerified: boolean;
 }

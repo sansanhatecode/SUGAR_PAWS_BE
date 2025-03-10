@@ -48,6 +48,7 @@ export class UserService {
           username: true,
           email: true,
           role: true,
+          isVerified: true,
         },
       });
     } catch (error: unknown) {

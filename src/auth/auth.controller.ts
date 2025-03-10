@@ -34,7 +34,6 @@ export class AuthController {
   @Post('signup')
   async signup(@Body() signupDto: SignupDto) {
     try {
-      // eslint-disable-next-line @typescript-eslint/await-thenable
       return await this.authService.signup(signupDto);
     } catch (error: unknown) {
       console.error('[AuthController] Signup error:', error);

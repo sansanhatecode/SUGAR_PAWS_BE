@@ -14,12 +14,81 @@ datasource db {
 }
 
 model User {
-  id        Int      @id @default(autoincrement())
-  email     String   @unique @db.VarChar(45)
-  name      String?  @db.VarChar(100)
-  username  String   @unique
-  role      String   @default("user")
-  password  String   @db.VarChar(100)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id            Int      @id @default(autoincrement())
+  email         String   @unique @db.VarChar(45)
+  name          String?  @db.VarChar(100)
+  username      String   @unique
+  role          String   @default("user")
+  isVerified    Boolean  @default(false)
+  password      String   @db.VarChar(100)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  cart          Cart?
+}
+
+model Category {
+  id         Int                @id @default(autoincrement())
+  name       String             @unique
+  products   ProductCategory[]
+  createdAt  DateTime           @default(now())
+  updatedAt  DateTime           @updatedAt
+}
+
+model Product {
+  id             Int                @id @default(autoincrement())
+  name           String
+  description    String
+  minPrice       Float
+  maxPrice       Float
+  displayImage   String[]
+  categories     ProductCategory[]
+  productDetails ProductDetail[]
+  createdAt      DateTime           @default(now())
+  updatedAt      DateTime           @updatedAt
+}
+
+model ProductCategory {
+  productId  Int
+  categoryId Int
+  product    Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  category   Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@id([productId, categoryId])
+}
+
+model ProductDetail {
+  id          Int      @id @default(autoincrement())
+  productId   Int
+  size        String
+  color       String
+  stock       Int
+  price       Float
+  discountPercentage Float @default(0)
+  cartItems   CartItem[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  product     Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+}
+
+model Cart {
+  id         Int      @id @default(autoincrement())
+  userId     Int      @unique
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  cartItems  CartItem[]
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model CartItem {
+  id               Int            @id @default(autoincrement())
+  cartId           Int
+  productDetailId  Int
+  quantity         Int
+  totalPrice       Float @default(0)
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+  cart             Cart           @relation(fields: [cartId], references: [id], onDelete: Cascade)
+  productDetail    ProductDetail  @relation(fields: [productDetailId], references: [id], onDelete: Cascade)
 }

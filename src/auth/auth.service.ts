@@ -28,6 +28,8 @@ export class AuthService {
         role: newUser.role,
       };
 
+      // await this.sendVerificationEmail(newUser.email, token);
+
       return {
         message: 'User registered successfully',
         access_token: this.jwtService.sign(payload),
@@ -40,6 +42,21 @@ export class AuthService {
       throw new InternalServerErrorException('Failed to sign up');
     }
   }
+
+  // async sendVerificationEmail(email: string, token: string) {
+  //   const url = `https://your-app.com/auth/verify-email?token=${token}`;
+  //   await this.mailService.send(email, 'Verify your email', url);
+  // }
+
+  // async verifyEmail(token: string) {
+  //   try {
+  //     const payload = this.jwtService.verify(token);
+  //     await this.userService.markEmailAsVerified(payload.userId);
+  //     return { message: 'Email verified successfully' };
+  //   } catch (error) {
+  //     throw new UnauthorizedException('Invalid or expired token');
+  //   }
+  // }
 
   async validateUser(email: string, enteredPassword: string): Promise<any> {
     try {
