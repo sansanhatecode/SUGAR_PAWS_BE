@@ -1,12 +1,10 @@
-import { Prisma } from '@prisma/client';
-
-export class User implements Prisma.UserCreateInput {
+export class User {
   id: number;
   email: string;
   name: string | null;
   password: string;
   username: string;
   role: string;
-  createdAt?: string | Date;
-  updatedAt?: string | Date;
+  createdAt: Date;
+  updatedAt: Date;
 }
