@@ -3,9 +3,6 @@ import { PrismaClient } from '@prisma/client';
 const prisma = new PrismaClient();
 
 export async function seedProducts() {
-  const categories = await prisma.category.findMany();
-  const lolitaCategory = categories.find((c) => c.name === 'Lolita Dresses');
-
   await prisma.product.createMany({
     data: [
       {

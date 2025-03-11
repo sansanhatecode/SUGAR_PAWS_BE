@@ -3,6 +3,7 @@ import { seedUsers } from './userSeeder';
 import { seedCategories } from './categorySeeder';
 import { seedProducts } from './productSeeder';
 import { seedProductDetails } from './productDetailSeeder';
+import { seedProductCategories } from './productCategorySeeder';
 import { seedCart } from './cartSeeder';
 
 const prisma = new PrismaClient();
@@ -21,6 +22,9 @@ async function main() {
 
   await seedProductDetails();
   console.log('✅ Seeded Product Details');
+
+  await seedProductCategories(); // Thêm bước này
+  console.log('✅ Seeded Product Categories');
 
   await seedCart();
   console.log('✅ Seeded Cart');
