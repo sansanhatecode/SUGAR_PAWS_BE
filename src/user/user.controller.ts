@@ -9,13 +9,16 @@ import {
   ParseIntPipe,
   Post,
   Res,
+  UseGuards,
 } from '@nestjs/common';
 import { UserService } from './user.service';
 import { Response } from 'express';
 import { User } from './user.model';
 import { GetUsersResponseDto } from './dto/get-users-response.dto';
+import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 
-@Controller('api/users')
+@UseGuards(JwtAuthGuard)
+@Controller('users')
 export class UserController {
   constructor(private readonly userService: UserService) {}
 

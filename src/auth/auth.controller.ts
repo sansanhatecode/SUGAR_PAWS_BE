@@ -4,14 +4,22 @@ import {
   Body,
   HttpException,
   InternalServerErrorException,
+  UseGuards,
+  Req,
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { SigninDto } from './dto/signin.dto';
 import { SignupDto } from './dto/signup.dto';
+import { JwtAuthGuard } from './jwt-auth.guard';
+import { LogoutService } from './logout.service';
+import { Request } from 'express';
 
-@Controller('api/auth')
+@Controller('auth')
 export class AuthController {
-  constructor(private readonly authService: AuthService) {}
+  constructor(
+    private readonly authService: AuthService,
+    private readonly logoutService: LogoutService,
+  ) {}
 
   @Post('signin')
   async signin(@Body() signinDto: SigninDto) {
@@ -44,5 +52,15 @@ export class AuthController {
 
       throw new InternalServerErrorException('Failed to sign up');
     }
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Post('signout')
+  logout(@Req() req: Request): { message: string } {
+    const token: string = req.headers.authorization?.split(' ')[1] ?? '';
+    if (token) {
+      this.logoutService.invalidateToken(token);
+    }
+    return { message: 'Logged out successfully' };
   }
 }
