@@ -27,20 +27,21 @@ model User {
 }
 
 model Category {
-  id         Int                @id @default(autoincrement())
-  name       String             @unique
+  id         Int         @id @default(autoincrement())
+  name       String      @unique
+  parentId   Int?
+  parent     Category?   @relation("CategorySelf", fields: [parentId], references: [id], onDelete: Cascade)
+  children   Category[]  @relation("CategorySelf")
   products   ProductCategory[]
-  createdAt  DateTime           @default(now())
-  updatedAt  DateTime           @updatedAt
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
 }
+
 
 model Product {
   id             Int                @id @default(autoincrement())
   name           String
   description    String
-  minPrice       Float
-  maxPrice       Float
-  totalStock     Int
   displayImage   String[]
   categories     ProductCategory[]
   productDetails ProductDetail[]

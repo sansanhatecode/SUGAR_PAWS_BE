@@ -13,7 +13,6 @@ export async function seedProductDetails() {
         color: 'Black',
         stock: 10,
         price: 75.0,
-        discountPercentage: 5,
       },
       {
         productId: products[1].id,
@@ -21,7 +20,6 @@ export async function seedProductDetails() {
         color: 'Red',
         stock: 5,
         price: 90.0,
-        discountPercentage: 10,
       },
     ],
   });
