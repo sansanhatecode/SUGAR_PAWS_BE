@@ -13,12 +13,14 @@ import { SignupDto } from './dto/signup.dto';
 import { JwtAuthGuard } from './jwt-auth.guard';
 import { LogoutService } from './logout.service';
 import { Request } from 'express';
+import { MailService } from '../mail/mail.service';
 
 @Controller('auth')
 export class AuthController {
   constructor(
     private readonly authService: AuthService,
     private readonly logoutService: LogoutService,
+    private readonly mailService: MailService,
   ) {}
 
   @Post('signin')
@@ -63,4 +65,17 @@ export class AuthController {
     }
     return { message: 'Logged out successfully' };
   }
+
+  @Post('verify-code')
+  async verifyCode(@Body('email') email: string, @Body('code') code: string) {
+    const result = await this.authService.verifyRegister(email, code);
+    return result;
+  }
+
+  // @Post('send-code')
+  // async sendCode(@Body('email') email: string) {
+  //   const code = this.authService.generateVerificationCode();
+  //   await this.mailService.sendVerificationEmail(email, code);
+  //   return { message: 'Validate code sent', data: { code } };
+  // }
 }

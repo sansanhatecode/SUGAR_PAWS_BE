@@ -10,29 +10,36 @@ import { JwtService } from '@nestjs/jwt';
 import { UserService } from '../user/user.service';
 import * as bcrypt from 'bcrypt';
 import { SignupDto } from './dto/signup.dto';
+import { MailService } from '../mail/mail.service';
+import { CacheService } from 'src/cache/cache.service';
 
 @Injectable()
 export class AuthService {
   constructor(
     private readonly userService: UserService,
     private readonly jwtService: JwtService,
+    private readonly mailService: MailService,
+    private readonly cacheService: CacheService,
   ) {}
 
-  async signup(signupDto: SignupDto) {
+  generateVerificationCode(): string {
+    return Math.floor(100000 + Math.random() * 900000).toString();
+  }
+
+  async signup(signupDto: SignupDto): Promise<{ message: string }> {
     try {
       const newUser = await this.userService.create(signupDto);
-
-      const payload = {
-        username: newUser.username,
-        sub: newUser.id,
-        role: newUser.role,
-      };
-
-      // await this.sendVerificationEmail(newUser.email, token);
+      if (!newUser) {
+        throw new InternalServerErrorException('Failed to sign up');
+      }
+      const code = this.generateVerificationCode();
+      await this.mailService.sendVerificationEmail(signupDto.email, code);
+      await this.cacheService.setCache(`verify:${signupDto.email}`, code, 300);
+      console.log('Saved code to Redis:', code);
 
       return {
-        message: 'User registered successfully',
-        access_token: this.jwtService.sign(payload),
+        message:
+          'User registered successfully. Please check your email for the verification code.',
       };
     } catch (error: unknown) {
       console.error(error);
@@ -43,20 +50,35 @@ export class AuthService {
     }
   }
 
-  // async sendVerificationEmail(email: string, token: string) {
-  //   const url = `https://your-app.com/auth/verify-email?token=${token}`;
-  //   await this.mailService.send(email, 'Verify your email', url);
-  // }
+  async verifyRegister(
+    email: string,
+    inputCode: string,
+  ): Promise<{ verified: boolean; access_token?: string }> {
+    const storedCode = await this.cacheService.getCache(`verify:${email}`);
+    console.log(storedCode, inputCode);
 
-  // async verifyEmail(token: string) {
-  //   try {
-  //     const payload = this.jwtService.verify(token);
-  //     await this.userService.markEmailAsVerified(payload.userId);
-  //     return { message: 'Email verified successfully' };
-  //   } catch (error) {
-  //     throw new UnauthorizedException('Invalid or expired token');
-  //   }
-  // }
+    if (storedCode && storedCode === inputCode) {
+      await this.cacheService.deleteCache(`verify:${email}`);
+
+      const user = await this.userService.findByEmailOrUsername(email);
+      if (!user) {
+        throw new NotFoundException('User not found');
+      }
+
+      if (!user.isVerified) {
+        user.isVerified = true;
+        await this.userService.update(user.id, user);
+      }
+      const payload = {
+        username: user.username,
+        sub: user.id,
+        role: user.role,
+      };
+      const token = this.jwtService.sign(payload);
+      return { verified: true, access_token: token };
+    }
+    throw new BadRequestException('Verification code is invalid or expired');
+  }
 
   async validateUser(email: string, enteredPassword: string): Promise<any> {
     try {

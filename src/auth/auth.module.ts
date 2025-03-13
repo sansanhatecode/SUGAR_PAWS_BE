@@ -6,15 +6,19 @@ import { JwtStrategy } from './jwt.strategy';
 import { UserModule } from '../user/user.module';
 import { AuthController } from './auth.controller';
 import { LogoutService } from './logout.service';
+import { MailModule } from 'src/mail/mail.module';
+import { CacheManagerModule } from 'src/cache/cache.module';
 
 @Module({
   imports: [
     UserModule,
     PassportModule,
+    MailModule,
     JwtModule.register({
       secret: process.env.JWT_SECRET || 'secret_key',
       signOptions: { expiresIn: process.env.JWT_EXPIRATION || '61d' },
     }),
+    CacheManagerModule,
   ],
   controllers: [AuthController],
   providers: [AuthService, JwtStrategy, LogoutService],

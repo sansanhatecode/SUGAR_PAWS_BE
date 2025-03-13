@@ -98,4 +98,24 @@ export class UserService {
       throw new InternalServerErrorException('Failed to fetch user');
     }
   }
+
+  async update(id: number, data: Prisma.UserUpdateInput): Promise<User> {
+    try {
+      if (data.password) {
+        data.password = await bcrypt.hash(data.password as string, 10);
+      }
+      return await this.prisma.user.update({
+        where: { id },
+        data,
+      });
+    } catch (error: unknown) {
+      if (
+        error instanceof PrismaClientKnownRequestError &&
+        error.code === 'P2025'
+      ) {
+        throw new NotFoundException('User not found');
+      }
+      throw new InternalServerErrorException('Something went wrong');
+    }
+  }
 }
