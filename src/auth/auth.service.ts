@@ -1,6 +1,7 @@
 import {
   BadRequestException,
   HttpException,
+  Inject,
   Injectable,
   InternalServerErrorException,
   NotFoundException,
@@ -11,7 +12,7 @@ import { UserService } from '../user/user.service';
 import * as bcrypt from 'bcrypt';
 import { SignupDto } from './dto/signup.dto';
 import { MailService } from '../mail/mail.service';
-import { CacheService } from 'src/cache/cache.service';
+import { Cache } from 'cache-manager';
 
 @Injectable()
 export class AuthService {
@@ -19,7 +20,7 @@ export class AuthService {
     private readonly userService: UserService,
     private readonly jwtService: JwtService,
     private readonly mailService: MailService,
-    private readonly cacheService: CacheService,
+    @Inject('CACHE_MANAGER') private readonly cacheManager: Cache,
   ) {}
 
   generateVerificationCode(): string {
@@ -34,12 +35,9 @@ export class AuthService {
       }
       const code = this.generateVerificationCode();
       await this.mailService.sendVerificationEmail(signupDto.email, code);
-      await this.cacheService.setCache(`verify:${signupDto.email}`, code, 300);
-      console.log('Saved code to Redis:', code);
-
+      await this.cacheManager.set(`verify:${signupDto.email}`, code, 300);
       return {
-        message:
-          'User registered successfully. Please check your email for the verification code.',
+        message: `Verification code sent successfully to ${signupDto.email}`,
       };
     } catch (error: unknown) {
       console.error(error);
@@ -54,11 +52,12 @@ export class AuthService {
     email: string,
     inputCode: string,
   ): Promise<{ verified: boolean; access_token?: string }> {
-    const storedCode = await this.cacheService.getCache(`verify:${email}`);
+    console.log('email:', email.length);
+    const storedCode = await this.cacheManager.get(`verify:${email}`);
     console.log(storedCode, inputCode);
 
     if (storedCode && storedCode === inputCode) {
-      await this.cacheService.deleteCache(`verify:${email}`);
+      await this.cacheManager.del(`verify:${email}`);
 
       const user = await this.userService.findByEmailOrUsername(email);
       if (!user) {
@@ -139,7 +138,7 @@ export class AuthService {
         role: user.role,
       };
       return {
-        access_token: this.jwtService.sign(payload),
+        data: { accessToken: this.jwtService.sign(payload) },
       };
     } catch (error: unknown) {
       console.error(error);
