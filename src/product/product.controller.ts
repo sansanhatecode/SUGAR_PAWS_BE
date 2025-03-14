@@ -9,6 +9,7 @@ import {
   HttpException,
   InternalServerErrorException,
   UseGuards,
+  Query,
 } from '@nestjs/common';
 import { ProductService } from './product.service';
 import { CreateProductDto } from './dto/create-product.dto';
@@ -34,10 +35,11 @@ export class ProductController {
     }
   }
 
-  @Get('/:categoryname')
-  async findByCategory(@Param('categoryname') categoryName: string) {
+  @Get()
+  async findByCategory(@Query('category') categoryName?: string) {
     try {
-      return await this.productService.findByCategory(categoryName);
+      if (categoryName)
+        return await this.productService.findByCategory(categoryName);
     } catch (error: unknown) {
       console.error('[ProductController] FindByCategory error:', error);
       if (error instanceof HttpException) {

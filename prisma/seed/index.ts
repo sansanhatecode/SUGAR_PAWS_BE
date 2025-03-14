@@ -9,6 +9,19 @@ import { seedCart } from './cartSeeder';
 const prisma = new PrismaClient();
 
 async function main() {
+  console.log('🗑️ Deleting existing data...');
+
+  await prisma.$transaction([
+    prisma.cart.deleteMany(),
+    prisma.productCategory.deleteMany(),
+    prisma.productDetail.deleteMany(),
+    prisma.product.deleteMany(),
+    prisma.category.deleteMany(),
+    prisma.user.deleteMany(),
+  ]);
+
+  console.log('✅ Deleted existing data');
+
   console.log('🌱 Seeding database...');
 
   await seedUsers();
@@ -23,7 +36,7 @@ async function main() {
   await seedProductDetails();
   console.log('✅ Seeded Product Details');
 
-  await seedProductCategories(); // Thêm bước này
+  await seedProductCategories();
   console.log('✅ Seeded Product Categories');
 
   await seedCart();
@@ -34,7 +47,6 @@ async function main() {
 
 main()
   .catch((e) => console.error(e))
-  // eslint-disable-next-line @typescript-eslint/no-misused-promises
-  .finally(async () => {
-    await prisma.$disconnect();
+  .finally(() => {
+    void prisma.$disconnect();
   });

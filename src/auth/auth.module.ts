@@ -7,7 +7,6 @@ import { UserModule } from '../user/user.module';
 import { AuthController } from './auth.controller';
 import { LogoutService } from './logout.service';
 import { MailModule } from 'src/mail/mail.module';
-import { CacheManagerModule } from 'src/cache/cache.module';
 
 @Module({
   imports: [
@@ -18,7 +17,6 @@ import { CacheManagerModule } from 'src/cache/cache.module';
       secret: process.env.JWT_SECRET || 'secret_key',
       signOptions: { expiresIn: process.env.JWT_EXPIRATION || '61d' },
     }),
-    CacheManagerModule,
   ],
   controllers: [AuthController],
   providers: [AuthService, JwtStrategy, LogoutService],
