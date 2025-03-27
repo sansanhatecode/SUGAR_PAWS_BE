@@ -77,17 +77,115 @@ export class ProductService {
     }
   }
 
-  async findByCategory(categoryName: string) {
+  async findByCategory(categoryName: string, color?: string, size?: string) {
     const formattedName = categoryName.toLowerCase().replace(/-/g, ' ');
 
     const category = await this.prisma.category.findUnique({
       where: { name: formattedName },
-      include: { products: { include: { product: true } } },
+      include: {
+        products: {
+          include: {
+            product: {
+              include: {
+                productDetails: true,
+              },
+            },
+          },
+        },
+      },
     });
+
     if (!category) {
       throw new NotFoundException('Category not found');
     }
-    return category.products.map((p) => p.product);
+
+    let products = category.products.map((p) => p.product);
+
+    if (color) {
+      products = products.filter((product) =>
+        product.productDetails.some((detail) => detail.color === color),
+      );
+    }
+
+    if (size) {
+      products = products.filter((product) =>
+        product.productDetails.some((detail) => detail.size === size),
+      );
+    }
+
+    return products;
+  }
+
+  async findSizesByCategory(categoryName: string) {
+    try {
+      const formattedName = categoryName.toLowerCase().replace(/-/g, ' ');
+
+      const category = await this.prisma.category.findUnique({
+        where: { name: formattedName },
+        include: {
+          products: {
+            include: {
+              product: {
+                include: {
+                  productDetails: true,
+                },
+              },
+            },
+          },
+        },
+      });
+
+      if (!category) {
+        throw new NotFoundException('Category not found');
+      }
+
+      const sizes = category.products.flatMap((p) =>
+        p.product.productDetails.map((detail) => detail.size),
+      );
+
+      return [...new Set(sizes)];
+    } catch (error) {
+      console.error(error);
+      throw new InternalServerErrorException(
+        'Failed to fetch sizes by category',
+      );
+    }
+  }
+
+  async findColorsByCategory(categoryName: string) {
+    try {
+      const formattedName = categoryName.toLowerCase().replace(/-/g, ' ');
+
+      const category = await this.prisma.category.findUnique({
+        where: { name: formattedName },
+        include: {
+          products: {
+            include: {
+              product: {
+                include: {
+                  productDetails: true,
+                },
+              },
+            },
+          },
+        },
+      });
+
+      if (!category) {
+        throw new NotFoundException('Category not found');
+      }
+
+      const colors = category.products.flatMap((p) =>
+        p.product.productDetails.map((detail) => detail.color),
+      );
+
+      return [...new Set(colors)];
+    } catch (error) {
+      console.error(error);
+      throw new InternalServerErrorException(
+        'Failed to fetch colors by category',
+      );
+    }
   }
 
   @UseGuards(JwtAuthGuard)
