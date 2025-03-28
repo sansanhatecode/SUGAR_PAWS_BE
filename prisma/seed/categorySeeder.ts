@@ -5,16 +5,6 @@ const prisma = new PrismaClient();
 export async function seedCategories() {
   const categoriesData = [
     {
-      name: 'ABOUT',
-      subcategories: [
-        'about us',
-        'retail location',
-        "faq's",
-        'event calendar',
-        'event booking',
-      ],
-    },
-    {
       name: 'ACCESSORIES',
       subcategories: [
         'gloves',

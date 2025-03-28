@@ -12,22 +12,27 @@ export async function seedProductCategories() {
   }
 
   const productCategoriesData = [
-    {
-      productId: products[0]?.id,
-      categoryId: categories[0]?.id,
-    },
-    {
-      productId: products[1]?.id,
-      categoryId: categories[1]?.id,
-    },
-    {
-      productId: products[1]?.id,
-      categoryId: categories[0]?.id,
-    },
+    { productId: products[0]?.id, categoryId: categories[0]?.id },
+    { productId: products[1]?.id, categoryId: categories[1]?.id },
+    { productId: products[1]?.id, categoryId: categories[0]?.id },
+    { productId: products[1]?.id, categoryId: categories[0]?.id }, // Duplicate for testing
   ].filter((pc) => pc.productId && pc.categoryId);
 
-  if (productCategoriesData.length > 0) {
-    await prisma.productCategory.createMany({ data: productCategoriesData });
+  // Loại bỏ các bản ghi trùng lặp dựa trên productId và categoryId
+  const uniqueProductCategoriesData = Array.from(
+    new Map(
+      productCategoriesData.map((item) => [
+        `${item.productId}-${item.categoryId}`,
+        item,
+      ]),
+    ).values(),
+  );
+
+  if (uniqueProductCategoriesData.length > 0) {
+    await prisma.productCategory.createMany({
+      data: uniqueProductCategoriesData,
+      skipDuplicates: true, // Bỏ qua các bản ghi trùng lặp (chỉ hỗ trợ trên PostgreSQL, MySQL, hoặc SQL Server)
+    });
     console.log('✅ Đã seed ProductCategory thành công!');
   } else {
     console.log('⚠️ Không có dữ liệu hợp lệ để seed ProductCategory');

@@ -72,7 +72,18 @@ model ProductDetail {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
   product     Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  imageId             Int?
+  image               ProductImage?   @relation(fields: [imageId], references: [id], onDelete: SetNull)
 }
+
+model ProductImage {
+  id          Int        @id @default(autoincrement())
+  url         String
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  productDetails ProductDetail[]
+}
+
 
 model Cart {
   id         Int      @id @default(autoincrement())

@@ -2,18 +2,18 @@ import {
   Injectable,
   NotFoundException,
   InternalServerErrorException,
-  UseGuards,
 } from '@nestjs/common';
 import { PrismaService } from 'src/prisma.service';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
-import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
+import { ApiResponse } from 'src/common/response.types';
+import { Product } from './product.model';
 
 @Injectable()
 export class ProductService {
   constructor(private prisma: PrismaService) {}
 
-  async findAll() {
+  async findAll(): Promise<ApiResponse<any>> {
     try {
       const products = await this.prisma.product.findMany({
         include: {
@@ -21,7 +21,7 @@ export class ProductService {
         },
       });
 
-      return products.map((product) => {
+      const formattedProducts = products.map((product) => {
         const productDetails = product.productDetails;
 
         return {
@@ -36,13 +36,19 @@ export class ProductService {
           colors: [...new Set(productDetails.map((detail) => detail.color))],
         };
       });
+
+      return {
+        statusCode: 200,
+        message: 'Products retrieved successfully',
+        data: formattedProducts,
+      };
     } catch (error) {
       console.error(error);
       throw new InternalServerErrorException('Failed to fetch products');
     }
   }
 
-  async findOne(productId: number) {
+  async findOne(productId: number): Promise<ApiResponse<Product>> {
     try {
       const product = await this.prisma.product.findUnique({
         where: { id: productId },
@@ -55,7 +61,7 @@ export class ProductService {
         throw new NotFoundException(`Product with ID ${productId} not found`);
       }
 
-      return {
+      const formattedProduct: Product = {
         ...product,
         totalStock: product.productDetails.reduce(
           (sum, detail) => sum + detail.stock,
@@ -71,52 +77,73 @@ export class ProductService {
           ...new Set(product.productDetails.map((detail) => detail.color)),
         ],
       };
+
+      return {
+        statusCode: 200,
+        message: 'Product retrieved successfully',
+        data: formattedProduct,
+      };
     } catch (error) {
       console.error(error);
       throw new InternalServerErrorException('Failed to fetch product');
     }
   }
 
-  async findByCategory(categoryName: string, color?: string, size?: string) {
-    const formattedName = categoryName.toLowerCase().replace(/-/g, ' ');
-
-    const category = await this.prisma.category.findUnique({
-      where: { name: formattedName },
-      include: {
-        products: {
-          include: {
-            product: {
-              include: {
-                productDetails: true,
+  async findByCategory(
+    categoryName: string,
+    color?: string,
+    size?: string,
+  ): Promise<ApiResponse<any>> {
+    try {
+      const category = await this.prisma.category.findUnique({
+        where: { name: categoryName },
+        include: {
+          products: {
+            include: {
+              product: {
+                include: {
+                  productDetails: true,
+                },
               },
             },
           },
         },
-      },
-    });
+      });
 
-    if (!category) {
-      throw new NotFoundException('Category not found');
-    }
+      if (!category) {
+        throw new NotFoundException('Category not found');
+      }
 
-    let products = category.products.map((p) => p.product);
+      let products = category.products.map((p) => p.product);
 
-    if (color) {
-      products = products.filter((product) =>
-        product.productDetails.some((detail) => detail.color === color),
+      if (color) {
+        products = products.filter((product) =>
+          product.productDetails.some((detail) => detail.color === color),
+        );
+      }
+
+      if (size) {
+        products = products.filter((product) =>
+          product.productDetails.some((detail) => detail.size === size),
+        );
+      }
+
+      const filteredProducts = products;
+
+      return {
+        statusCode: 200,
+        message: 'Products by category retrieved successfully',
+        data: filteredProducts,
+      };
+    } catch (error) {
+      console.error(error);
+      throw new InternalServerErrorException(
+        'Failed to fetch products by category',
       );
     }
-
-    if (size) {
-      products = products.filter((product) =>
-        product.productDetails.some((detail) => detail.size === size),
-      );
-    }
-
-    return products;
   }
 
-  async findSizesByCategory(categoryName: string) {
+  async findSizesByCategory(categoryName: string): Promise<ApiResponse<any>> {
     try {
       const formattedName = categoryName.toLowerCase().replace(/-/g, ' ');
 
@@ -143,7 +170,13 @@ export class ProductService {
         p.product.productDetails.map((detail) => detail.size),
       );
 
-      return [...new Set(sizes)];
+      const uniqueSizes = [...new Set(sizes)];
+
+      return {
+        statusCode: 200,
+        message: 'Sizes by category retrieved successfully',
+        data: uniqueSizes,
+      };
     } catch (error) {
       console.error(error);
       throw new InternalServerErrorException(
@@ -152,7 +185,7 @@ export class ProductService {
     }
   }
 
-  async findColorsByCategory(categoryName: string) {
+  async findColorsByCategory(categoryName: string): Promise<ApiResponse<any>> {
     try {
       const formattedName = categoryName.toLowerCase().replace(/-/g, ' ');
 
@@ -179,7 +212,13 @@ export class ProductService {
         p.product.productDetails.map((detail) => detail.color),
       );
 
-      return [...new Set(colors)];
+      const uniqueColors = [...new Set(colors)];
+
+      return {
+        statusCode: 200,
+        message: 'Colors by category retrieved successfully',
+        data: uniqueColors,
+      };
     } catch (error) {
       console.error(error);
       throw new InternalServerErrorException(
@@ -188,13 +227,13 @@ export class ProductService {
     }
   }
 
-  @UseGuards(JwtAuthGuard)
-  async create(data: CreateProductDto) {
+  async create(data: CreateProductDto): Promise<ApiResponse<any>> {
     try {
       const product = await this.prisma.product.create({ data });
       return {
+        statusCode: 201,
         message: 'Product created successfully',
-        product,
+        data: product,
       };
     } catch (error) {
       console.error(error);
@@ -202,16 +241,16 @@ export class ProductService {
     }
   }
 
-  @UseGuards(JwtAuthGuard)
-  async update(id: number, data: UpdateProductDto) {
+  async update(id: number, data: UpdateProductDto): Promise<ApiResponse<any>> {
     try {
       const product = await this.prisma.product.update({
         where: { id },
         data,
       });
       return {
+        statusCode: 200,
         message: 'Product updated successfully',
-        product,
+        data: product,
       };
     } catch (error) {
       console.error(error);
@@ -219,11 +258,11 @@ export class ProductService {
     }
   }
 
-  @UseGuards(JwtAuthGuard)
-  async delete(id: number) {
+  async delete(id: number): Promise<ApiResponse<any>> {
     try {
       await this.prisma.product.delete({ where: { id } });
       return {
+        statusCode: 200,
         message: 'Product deleted successfully',
       };
     } catch (error) {

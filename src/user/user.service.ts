@@ -17,12 +17,20 @@ export class UserService {
   async create(data: Prisma.UserCreateInput): Promise<User> {
     try {
       const hashedPassword = await bcrypt.hash(data.password, 10);
-      return await this.prisma.user.create({
+      // Tạo user trước
+      const user = await this.prisma.user.create({
         data: {
           ...data,
           password: hashedPassword,
         },
       });
+      // Sau khi tạo user, tạo cart cho user đó
+      await this.prisma.cart.create({
+        data: {
+          userId: user.id,
+        },
+      });
+      return user; // Trả về user sau khi tạo cart thành công
     } catch (error: unknown) {
       if (error instanceof PrismaClientKnownRequestError) {
         if (error.code === 'P2002') {

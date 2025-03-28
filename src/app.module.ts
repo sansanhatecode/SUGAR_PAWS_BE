@@ -5,6 +5,8 @@ import { ProductModule } from './product/product.module';
 import { MailModule } from './mail/mail.module';
 import { CacheModule } from '@nestjs/cache-manager';
 import { redisStore } from 'cache-manager-redis-yet';
+import { CartModule } from './cart/cart.module';
+import { CartItemModule } from './cart/cart-item/cart-item.module';
 
 @Module({
   imports: [
@@ -24,6 +26,8 @@ import { redisStore } from 'cache-manager-redis-yet';
         }),
       }),
     }),
+    CartModule,
+    CartItemModule,
   ],
 })
 export class AppModule {}

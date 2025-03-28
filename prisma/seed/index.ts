@@ -5,6 +5,7 @@ import { seedProducts } from './productSeeder';
 import { seedProductDetails } from './productDetailSeeder';
 import { seedProductCategories } from './productCategorySeeder';
 import { seedCart } from './cartSeeder';
+import { seedProductImages } from './productImageSeeder';
 
 const prisma = new PrismaClient();
 
@@ -32,6 +33,9 @@ async function main() {
 
   await seedProducts();
   console.log('✅ Seeded Products');
+
+  await seedProductImages();
+  console.log('✅ Seeded Product Images');
 
   await seedProductDetails();
   console.log('✅ Seeded Product Details');
