@@ -19,6 +19,20 @@ export class CartService {
       },
     });
 
+    const formatedCart: Cart | undefined = cart
+      ? {
+          ...cart,
+          cartItems: cart.cartItems.map((item) => ({
+            ...item,
+            productDetail: {
+              ...item.productDetail,
+              size: item.productDetail.size ?? undefined,
+              color: item.productDetail.color ?? undefined,
+            },
+          })),
+        }
+      : undefined;
+
     if (!cart) {
       throw new NotFoundException('Cart not found for this user');
     }
@@ -26,7 +40,7 @@ export class CartService {
     return {
       statusCode: 200,
       message: 'Cart retrieved successfully',
-      data: cart,
+      data: formatedCart,
     };
   }
 }

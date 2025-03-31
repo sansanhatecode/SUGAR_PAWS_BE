@@ -8,6 +8,7 @@ export class Product {
   createdAt: Date;
   updatedAt: Date;
   totalStock?: number;
+  totalSales?: number;
   minPrice?: number;
   maxPrice?: number;
   colors?: string[];

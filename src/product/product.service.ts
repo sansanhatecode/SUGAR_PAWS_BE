@@ -30,10 +30,17 @@ export class ProductService {
             (sum, detail) => sum + detail.stock,
             0,
           ),
+          totalSales: productDetails.reduce(
+            (sum, detail) => sum + detail.sale,
+            0,
+          ),
+          maxPrice: productDetails.length,
           minPrice: productDetails.length
             ? Math.min(...productDetails.map((detail) => detail.price))
             : 0,
-          colors: [...new Set(productDetails.map((detail) => detail.color))],
+          colors: [
+            ...new Set(productDetails.map((detail) => detail.color)),
+          ].filter((color): color is string => color !== null),
         };
       });
 
@@ -67,6 +74,10 @@ export class ProductService {
           (sum, detail) => sum + detail.stock,
           0,
         ),
+        totalSales: product.productDetails.reduce(
+          (sum, detail) => sum + detail.sale,
+          0,
+        ),
         minPrice: product.productDetails.length
           ? Math.min(...product.productDetails.map((detail) => detail.price))
           : 0,
@@ -74,8 +85,17 @@ export class ProductService {
           ? Math.max(...product.productDetails.map((detail) => detail.price))
           : 0,
         colors: [
-          ...new Set(product.productDetails.map((detail) => detail.color)),
+          ...new Set(
+            product.productDetails
+              .map((detail) => detail.color)
+              .filter((color): color is string => color !== null),
+          ),
         ],
+        productDetails: product.productDetails.map((detail) => ({
+          ...detail,
+          size: detail.size ?? undefined,
+          color: detail.color ?? undefined,
+        })),
       };
 
       return {
@@ -93,7 +113,10 @@ export class ProductService {
     categoryName: string,
     color?: string,
     size?: string,
-  ): Promise<ApiResponse<any>> {
+    availability?: number, // 0 for out of stock, 1 for in stock
+    sortBy?: 'priceAsc' | 'priceDesc' | 'bestSelling',
+    priceRange?: { min: number; max: number },
+  ): Promise<ApiResponse<Product[]>> {
     try {
       const category = await this.prisma.category.findUnique({
         where: { name: categoryName },
@@ -114,22 +137,84 @@ export class ProductService {
         throw new NotFoundException('Category not found');
       }
 
-      let products = category.products.map((p) => p.product);
+      const products = category.products.map((p) => p.product);
+
+      const formattedProducts = products.map((product) => {
+        const productDetails = product.productDetails.map((detail) => ({
+          ...detail,
+          size: detail.size ?? undefined,
+        }));
+
+        return {
+          ...product,
+          totalStock: productDetails.reduce(
+            (sum, detail) => sum + detail.stock,
+            0,
+          ),
+          totalSales: productDetails.reduce(
+            (sum, detail) => sum + detail.sale,
+            0,
+          ),
+          maxPrice: productDetails.length
+            ? Math.max(...productDetails.map((detail) => detail.price))
+            : 0,
+          minPrice: productDetails.length
+            ? Math.min(...productDetails.map((detail) => detail.price))
+            : 0,
+          colors: [
+            ...new Set(productDetails.map((detail) => detail.color)),
+          ].filter((color): color is string => color !== null),
+          productDetails: product.productDetails.map((detail) => ({
+            ...detail,
+            size: detail.size ?? undefined,
+            color: detail.color ?? undefined,
+          })),
+        };
+      });
+
+      // Filter products by color
+      let filteredProducts = formattedProducts;
 
       if (color) {
-        products = products.filter((product) =>
+        filteredProducts = filteredProducts.filter((product) =>
           product.productDetails.some((detail) => detail.color === color),
         );
       }
 
+      // Filter products by size
       if (size) {
-        products = products.filter((product) =>
+        filteredProducts = filteredProducts.filter((product) =>
           product.productDetails.some((detail) => detail.size === size),
         );
       }
 
-      const filteredProducts = products;
-
+      // Filter products by availability
+      if (availability !== undefined) {
+        filteredProducts = filteredProducts.filter((product) =>
+          availability === 1
+            ? product.totalStock > 0
+            : product.totalStock === 0,
+        );
+      }
+      // Filter products by price range
+      if (priceRange) {
+        filteredProducts = filteredProducts.filter((product) =>
+          product.productDetails.some(
+            (detail) =>
+              detail.price >= priceRange.min && detail.price <= priceRange.max,
+          ),
+        );
+      }
+      // Sort products
+      if (sortBy) {
+        if (sortBy === 'priceAsc') {
+          filteredProducts.sort((a, b) => a.minPrice - b.minPrice);
+        } else if (sortBy === 'priceDesc') {
+          filteredProducts.sort((a, b) => b.maxPrice - a.maxPrice);
+        } else if (sortBy === 'bestSelling') {
+          filteredProducts.sort((a, b) => b.totalSales - a.totalSales);
+        }
+      }
       return {
         statusCode: 200,
         message: 'Products by category retrieved successfully',

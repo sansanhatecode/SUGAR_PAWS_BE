@@ -13,17 +13,34 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+
+enum OrderStatus {
+  PENDING
+  PAID
+  PROCESSING
+  SHIPPED
+  DELIVERED
+  CANCELLED
+  REFUNDED
+}
+
+enum UserRole {
+  ADMIN
+  USER
+}
+
 model User {
   id            Int      @id @default(autoincrement())
   email         String   @unique @db.VarChar(45)
   name          String?  @db.VarChar(100)
   username      String   @unique
-  role          String   @default("user")
+  role          UserRole   @default(USER)
   isVerified    Boolean  @default(false)
   password      String   @db.VarChar(100)
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
   cart          Cart?
+  orders        Order[]
 }
 
 model Category {
@@ -32,7 +49,7 @@ model Category {
   parentId   Int?
   parent     Category?   @relation("CategorySelf", fields: [parentId], references: [id], onDelete: Cascade)
   children   Category[]  @relation("CategorySelf")
-  products   ProductCategory[]
+  products   ProductCategory[] 
   createdAt  DateTime    @default(now())
   updatedAt  DateTime    @updatedAt
 }
@@ -63,9 +80,10 @@ model ProductCategory {
 model ProductDetail {
   id          Int      @id @default(autoincrement())
   productId   Int
-  size        String
-  color       String
+  size        String?
+  color       String?
   stock       Int
+  sale        Int      @default(0)
   price       Float
   discountPercentage Float @default(0)
   cartItems   CartItem[]
@@ -74,6 +92,7 @@ model ProductDetail {
   product     Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
   imageId             Int?
   image               ProductImage?   @relation(fields: [imageId], references: [id], onDelete: SetNull)
+  orderItems          OrderItem[]     @relation("ProductDetailToOrderItem")
 }
 
 model ProductImage {
@@ -99,9 +118,29 @@ model CartItem {
   cartId           Int
   productDetailId  Int
   quantity         Int
-  totalPrice       Float @default(0)
   createdAt        DateTime       @default(now())
   updatedAt        DateTime       @updatedAt
   cart             Cart           @relation(fields: [cartId], references: [id], onDelete: Cascade)
   productDetail    ProductDetail  @relation(fields: [productDetailId], references: [id], onDelete: Cascade)
+}
+
+model Order {
+  id         Int      @id @default(autoincrement())
+  userId     Int
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  orderItems OrderItem[]
+}
+
+model OrderItem {
+  id          Int      @id @default(autoincrement())
+  orderId     Int
+  status     OrderStatus   @default(PENDING)
+  productDetailId Int
+  quantity    Int
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  productDetail ProductDetail @relation("ProductDetailToOrderItem", fields: [productDetailId], references: [id], onDelete: Cascade)
+  Order Order[]
 }

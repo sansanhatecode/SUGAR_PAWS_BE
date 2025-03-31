@@ -5,40 +5,44 @@ const prisma = new PrismaClient();
 export async function seedProductDetails() {
   const productDetailsData = [
     {
-      productId: 1, // ID của Sweet Lolita Blouse
+      productId: 1,
       size: 'XS',
       color: 'Red',
       stock: 20,
+      sale: 0, // Default value for sale
       price: 49.99,
-      discountPercentage: 10,
-      imageId: 1, // Liên kết với hình ảnh red_blouse.jpg
+      discountPercentage: 10.0, // Ensure it's a float
+      imageId: 1,
     },
     {
       productId: 1,
       size: 'L',
       color: 'Red',
       stock: 15,
+      sale: 0, // Default value for sale
       price: 49.99,
-      discountPercentage: 10,
-      imageId: 1, // Cùng ảnh với XS, màu đỏ
+      discountPercentage: 10.0,
+      imageId: 1,
     },
     {
       productId: 1,
       size: 'M',
       color: 'Blue',
       stock: 10,
+      sale: 0, // Default value for sale
       price: 54.99,
-      discountPercentage: 0,
-      imageId: 2, // Liên kết với hình ảnh blue_blouse.jpg
+      discountPercentage: 0.0, // Ensure it's a float
+      imageId: 2,
     },
     {
-      productId: 2, // ID của Classic Lolita Skirt
+      productId: 2,
       size: 'S',
       color: 'Pink',
       stock: 12,
+      sale: 5, // Default value for sale
       price: 39.99,
-      discountPercentage: 5,
-      imageId: 3, // Liên kết với hình ảnh pink_skirt.jpg
+      discountPercentage: 5.0, // Ensure it's a float
+      imageId: 3,
     },
   ];
 

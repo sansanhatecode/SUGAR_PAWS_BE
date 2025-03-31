@@ -9,6 +9,7 @@ import {
 import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
 import * as bcrypt from 'bcrypt';
 import { GetUsersResponseDto } from './dto/get-users-response.dto';
+import { UserRole } from '@prisma/client';
 
 @Injectable()
 export class UserService {
@@ -21,6 +22,7 @@ export class UserService {
       const user = await this.prisma.user.create({
         data: {
           ...data,
+          role: data.role as UserRole,
           password: hashedPassword,
         },
       });

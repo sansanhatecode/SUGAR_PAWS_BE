@@ -46,17 +46,12 @@ export class CartItemService {
           error: 'Invalid quantity',
         };
       }
-
-      // Tính totalPrice dựa trên price của productDetail nhân với quantity
-      const totalPrice = productDetail.price * dto.quantity;
-
       // Thêm sản phẩm vào giỏ hàng
       const cartItem = await prisma.cartItem.create({
         data: {
           cartId: cart.id,
           productDetailId: dto.productDetailId,
           quantity: dto.quantity,
-          totalPrice: totalPrice,
         },
       });
 
@@ -124,7 +119,6 @@ export class CartItemService {
   }
 
   async updateCartItem(
-    userId: number,
     cartItemId: number,
     dto: UpdateCartItemDto,
   ): Promise<ApiResponse<any>> {
@@ -152,14 +146,11 @@ export class CartItemService {
 
       await prisma.cartItem.delete({ where: { id: cartItemId } });
 
-      const totalPrice = productDetail.price * dto.quantity;
-
       const newCartItem = await prisma.cartItem.create({
         data: {
           cartId: cartItem.cartId,
           productDetailId: dto.newProductDetailId,
           quantity: dto.quantity,
-          totalPrice,
         },
       });
 
