@@ -85,7 +85,7 @@ export class ProductService {
         ),
         totalSales: product.productDetails.reduce(
           (sum, detail) =>
-            sum + (Number.isFinite(detail.sale) ? (detail.sale as number) : 0),
+            sum + (Number.isFinite(detail.sale) ? detail.sale : 0),
           0,
         ),
         minPrice: product.productDetails.length

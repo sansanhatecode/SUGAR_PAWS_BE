@@ -1,4 +1,4 @@
-import { ProductDetail } from 'src/product-detail/product-detail.model';
+import { ProductDetail } from 'src/modules/product-detail/product-detail.model';
 
 export class CartItem {
   id: number;

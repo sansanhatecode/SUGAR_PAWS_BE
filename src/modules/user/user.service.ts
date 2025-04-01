@@ -1,5 +1,4 @@
 import { Prisma, User } from '@prisma/client';
-import { PrismaService } from '../prisma.service';
 import {
   BadRequestException,
   Injectable,
@@ -10,6 +9,7 @@ import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
 import * as bcrypt from 'bcrypt';
 import { GetUsersResponseDto } from './dto/get-users-response.dto';
 import { UserRole } from '@prisma/client';
+import { PrismaService } from 'src/prisma.service';
 
 @Injectable()
 export class UserService {

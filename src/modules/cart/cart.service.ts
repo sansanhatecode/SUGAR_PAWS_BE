@@ -1,7 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaClient } from '@prisma/client';
 import { Cart } from './cart.model';
-import { ApiResponse } from '../common/response.types'; // Import ApiResponse
+import { ApiResponse } from '../../common/response.types'; // Import ApiResponse
 
 const prisma = new PrismaClient();
 

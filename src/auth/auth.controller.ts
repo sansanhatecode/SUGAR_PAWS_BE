@@ -13,7 +13,7 @@ import { SignupDto } from './dto/signup.dto';
 import { JwtAuthGuard } from './jwt-auth.guard';
 import { LogoutService } from './logout.service';
 import { Request } from 'express';
-import { MailService } from '../mail/mail.service';
+import { MailService } from '../modules/mail/mail.service';
 
 @Controller('auth')
 export class AuthController {

@@ -8,11 +8,11 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
-import { UserService } from '../user/user.service';
 import * as bcrypt from 'bcrypt';
 import { SignupDto } from './dto/signup.dto';
-import { MailService } from '../mail/mail.service';
+import { MailService } from '../modules/mail/mail.service';
 import { Cache } from 'cache-manager';
+import { UserService } from 'src/modules/user/user.service';
 
 @Injectable()
 export class AuthService {

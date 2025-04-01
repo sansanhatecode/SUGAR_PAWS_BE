@@ -1,12 +1,14 @@
 import { Module } from '@nestjs/common';
-import { UserModule } from './user/user.module';
+
 import { AuthModule } from './auth/auth.module';
-import { ProductModule } from './product/product.module';
-import { MailModule } from './mail/mail.module';
+
+import { MailModule } from './modules/mail/mail.module';
 import { CacheModule } from '@nestjs/cache-manager';
 import { redisStore } from 'cache-manager-redis-yet';
-import { CartModule } from './cart/cart.module';
-import { CartItemModule } from './cart/cart-item/cart-item.module';
+import { UserModule } from './modules/user/user.module';
+import { ProductModule } from './modules/product/product.module';
+import { CartModule } from './modules/cart/cart.module';
+import { CartItemModule } from './modules/cart/cart-item/cart-item.module';
 
 @Module({
   imports: [

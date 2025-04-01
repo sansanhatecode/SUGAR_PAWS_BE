@@ -2,7 +2,7 @@ import { Controller, Get, Req, UseGuards } from '@nestjs/common';
 import { CartService } from './cart.service';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 import { AuthenticatedRequest } from 'src/common/request.types';
-import { ApiResponse } from '../common/response.types'; // Import ApiResponse
+import { ApiResponse } from '../../common/response.types'; // Import ApiResponse
 import { Cart } from './cart.model';
 
 @Controller('cart')
