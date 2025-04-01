@@ -22,8 +22,13 @@ export class CartService {
     const formatedCart: Cart | undefined = cart
       ? {
           ...cart,
+          totalPrice: cart.cartItems.reduce(
+            (total, item) => total + item.quantity * item.productDetail.price,
+            0,
+          ),
           cartItems: cart.cartItems.map((item) => ({
             ...item,
+            totalPrice: item.quantity * item.productDetail.price,
             productDetail: {
               ...item.productDetail,
               size: item.productDetail.size ?? undefined,

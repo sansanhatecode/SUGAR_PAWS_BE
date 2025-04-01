@@ -1,5 +1,6 @@
 import {
   BadRequestException,
+  HttpStatus,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
@@ -41,7 +42,7 @@ export class CartItemService {
       // Kiểm tra số lượng yêu cầu có vượt quá số lượng hiện có của sản phẩm hay không
       if (dto.quantity > productDetail.stock) {
         return {
-          statusCode: 400,
+          statusCode: HttpStatus.BAD_REQUEST,
           message: 'Quantity exceeds available stock',
           error: 'Invalid quantity',
         };
@@ -56,13 +57,13 @@ export class CartItemService {
       });
 
       return {
-        statusCode: 201,
+        statusCode: HttpStatus.CREATED,
         message: 'CartItem created successfully',
         data: cartItem,
       };
     } catch (error: unknown) {
       return {
-        statusCode: 500,
+        statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
         message: 'Failed to create CartItem',
         error: error instanceof Error ? error.message : 'Unknown error',
       };
@@ -81,7 +82,7 @@ export class CartItemService {
 
       if (!cart) {
         return {
-          statusCode: 404,
+          statusCode: HttpStatus.NOT_FOUND,
           message: 'Cart not found for this user',
           error: 'Not Found',
         };
@@ -94,7 +95,7 @@ export class CartItemService {
 
       if (!cartItem || cartItem.cartId !== cart.id) {
         return {
-          statusCode: 404,
+          statusCode: HttpStatus.NOT_FOUND,
           message: "CartItem not found or does not belong to this user's cart",
           error: 'Not Found',
         };
@@ -106,12 +107,12 @@ export class CartItemService {
       });
 
       return {
-        statusCode: 200,
+        statusCode: HttpStatus.OK,
         message: 'CartItem deleted successfully',
       };
     } catch (error: unknown) {
       return {
-        statusCode: 500,
+        statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
         message: 'Failed to delete CartItem',
         error: error instanceof Error ? error.message : 'Unknown error',
       };
@@ -155,13 +156,13 @@ export class CartItemService {
       });
 
       return {
-        statusCode: 200,
+        statusCode: HttpStatus.OK,
         message: 'CartItem updated successfully',
         data: newCartItem,
       };
     } catch (error) {
       return {
-        statusCode: 500,
+        statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
         message: 'Failed to update CartItem',
         error: error instanceof Error ? error.message : 'Unknown error',
       };

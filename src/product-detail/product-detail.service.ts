@@ -3,6 +3,7 @@ import {
   NotFoundException,
   InternalServerErrorException,
   BadRequestException,
+  HttpStatus,
 } from '@nestjs/common';
 import { PrismaService } from 'src/prisma.service';
 import { ProductDetail } from './product-detail.model';
@@ -23,7 +24,7 @@ export class ProductDetailService {
       }
       const productDetail = await this.prisma.productDetail.create({ data });
       return {
-        statusCode: 201,
+        statusCode: HttpStatus.CREATED,
         message: 'Product detail created successfully',
         data: {
           ...productDetail,
@@ -52,7 +53,7 @@ export class ProductDetailService {
         data,
       });
       return {
-        statusCode: 200,
+        statusCode: HttpStatus.OK,
         message: 'Product detail updated successfully',
         data: {
           ...productDetail,
@@ -74,7 +75,7 @@ export class ProductDetailService {
         where: { id },
       });
       return {
-        statusCode: 200,
+        statusCode: HttpStatus.OK,
         message: 'Product detail deleted successfully',
       };
     } catch (error) {

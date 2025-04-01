@@ -2,6 +2,7 @@ import {
   Injectable,
   NotFoundException,
   InternalServerErrorException,
+  HttpStatus,
 } from '@nestjs/common';
 import { PrismaService } from 'src/prisma.service';
 import { CreateProductDto } from './dto/create-product.dto';
@@ -13,7 +14,7 @@ import { Product } from './product.model';
 export class ProductService {
   constructor(private prisma: PrismaService) {}
 
-  async findAll(): Promise<ApiResponse<any>> {
+  async findAll(): Promise<ApiResponse<Product[]>> {
     try {
       const products = await this.prisma.product.findMany({
         include: {
@@ -31,21 +32,29 @@ export class ProductService {
             0,
           ),
           totalSales: productDetails.reduce(
-            (sum, detail) => sum + detail.sale,
+            (sum, detail) =>
+              sum + (Number.isFinite(detail.sale) ? Number(detail.sale) : 0),
             0,
           ),
-          maxPrice: productDetails.length,
+          maxPrice: productDetails.length
+            ? Math.max(...productDetails.map((detail) => detail.price))
+            : 0,
           minPrice: productDetails.length
             ? Math.min(...productDetails.map((detail) => detail.price))
             : 0,
           colors: [
             ...new Set(productDetails.map((detail) => detail.color)),
           ].filter((color): color is string => color !== null),
+          productDetails: productDetails.map((detail) => ({
+            ...detail,
+            size: detail.size ?? undefined,
+            color: detail.color ?? undefined,
+          })),
         };
       });
 
       return {
-        statusCode: 200,
+        statusCode: HttpStatus.OK,
         message: 'Products retrieved successfully',
         data: formattedProducts,
       };
@@ -75,7 +84,8 @@ export class ProductService {
           0,
         ),
         totalSales: product.productDetails.reduce(
-          (sum, detail) => sum + detail.sale,
+          (sum, detail) =>
+            sum + (Number.isFinite(detail.sale) ? (detail.sale as number) : 0),
           0,
         ),
         minPrice: product.productDetails.length
@@ -99,7 +109,7 @@ export class ProductService {
       };
 
       return {
-        statusCode: 200,
+        statusCode: HttpStatus.OK,
         message: 'Product retrieved successfully',
         data: formattedProduct,
       };
@@ -113,7 +123,7 @@ export class ProductService {
     categoryName: string,
     color?: string,
     size?: string,
-    availability?: number, // 0 for out of stock, 1 for in stock
+    availability?: number,
     sortBy?: 'priceAsc' | 'priceDesc' | 'bestSelling',
     priceRange?: { min: number; max: number },
   ): Promise<ApiResponse<Product[]>> {
@@ -152,7 +162,8 @@ export class ProductService {
             0,
           ),
           totalSales: productDetails.reduce(
-            (sum, detail) => sum + detail.sale,
+            (sum, detail) =>
+              sum + (Number.isFinite(detail.sale) ? Number(detail.sale) : 0),
             0,
           ),
           maxPrice: productDetails.length
@@ -196,7 +207,7 @@ export class ProductService {
             : product.totalStock === 0,
         );
       }
-      // Filter products by price range
+
       if (priceRange) {
         filteredProducts = filteredProducts.filter((product) =>
           product.productDetails.some(
@@ -205,7 +216,7 @@ export class ProductService {
           ),
         );
       }
-      // Sort products
+
       if (sortBy) {
         if (sortBy === 'priceAsc') {
           filteredProducts.sort((a, b) => a.minPrice - b.minPrice);
@@ -216,7 +227,7 @@ export class ProductService {
         }
       }
       return {
-        statusCode: 200,
+        statusCode: HttpStatus.OK,
         message: 'Products by category retrieved successfully',
         data: filteredProducts,
       };
@@ -258,7 +269,7 @@ export class ProductService {
       const uniqueSizes = [...new Set(sizes)];
 
       return {
-        statusCode: 200,
+        statusCode: HttpStatus.OK,
         message: 'Sizes by category retrieved successfully',
         data: uniqueSizes,
       };
@@ -300,7 +311,7 @@ export class ProductService {
       const uniqueColors = [...new Set(colors)];
 
       return {
-        statusCode: 200,
+        statusCode: HttpStatus.OK,
         message: 'Colors by category retrieved successfully',
         data: uniqueColors,
       };
@@ -316,7 +327,7 @@ export class ProductService {
     try {
       const product = await this.prisma.product.create({ data });
       return {
-        statusCode: 201,
+        statusCode: HttpStatus.CREATED,
         message: 'Product created successfully',
         data: product,
       };
@@ -333,7 +344,7 @@ export class ProductService {
         data,
       });
       return {
-        statusCode: 200,
+        statusCode: HttpStatus.OK,
         message: 'Product updated successfully',
         data: product,
       };
@@ -347,7 +358,7 @@ export class ProductService {
     try {
       await this.prisma.product.delete({ where: { id } });
       return {
-        statusCode: 200,
+        statusCode: HttpStatus.OK,
         message: 'Product deleted successfully',
       };
     } catch (error) {

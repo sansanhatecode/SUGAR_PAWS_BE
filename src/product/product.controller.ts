@@ -41,16 +41,26 @@ export class ProductController {
     @Query('category') categoryName?: string,
     @Query('color') color?: string,
     @Query('size') size?: string,
+    @Query('sortBy') sortBy?: 'priceAsc' | 'priceDesc' | 'bestSelling',
+    @Query('avaiability') avaiability?: number,
+    @Query('minPrice') minPrice?: number,
+    @Query('maxPrice') maxPrice?: number,
   ): Promise<ApiResponse<any>> {
     try {
       if (!categoryName) {
         throw new BadRequestException('Category is required');
       }
-
+      const priceRange = {
+        min: minPrice ?? 0,
+        max: maxPrice ?? Number.MAX_VALUE,
+      };
       return await this.productService.findByCategory(
         categoryName,
         color,
         size,
+        avaiability,
+        sortBy,
+        priceRange,
       );
     } catch (error: unknown) {
       console.error('[ProductController] FindByCategory error:', error);

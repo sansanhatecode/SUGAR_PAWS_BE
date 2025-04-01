@@ -26,7 +26,6 @@ export async function seedCart() {
   const cartItemsData = productDetails.map((productDetail, index) => ({
     productDetailId: productDetail.id,
     quantity: index + 1,
-    totalPrice: productDetail.price * (index + 1),
   }));
 
   await prisma.cartItem.createMany({

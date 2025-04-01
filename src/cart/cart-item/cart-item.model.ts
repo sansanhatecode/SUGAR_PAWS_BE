@@ -5,7 +5,7 @@ export class CartItem {
   cartId: number;
   productDetailId: number;
   quantity: number;
-  totalPrice: number;
+  totalPrice?: number;
   createdAt: Date;
   updatedAt: Date;
   productDetail?: ProductDetail;
