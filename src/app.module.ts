@@ -9,6 +9,7 @@ import { UserModule } from './modules/user/user.module';
 import { ProductModule } from './modules/product/product.module';
 import { CartModule } from './modules/cart/cart.module';
 import { CartItemModule } from './modules/cart/cart-item/cart-item.module';
+import { ViettelPostModule } from './modules/viettel-post/viettel-post.module';
 
 @Module({
   imports: [
@@ -30,6 +31,7 @@ import { CartItemModule } from './modules/cart/cart-item/cart-item.module';
     }),
     CartModule,
     CartItemModule,
+    ViettelPostModule,
   ],
 })
 export class AppModule {}
