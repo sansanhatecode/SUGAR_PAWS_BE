@@ -16,7 +16,6 @@ datasource db {
 
 enum OrderStatus {
   PENDING
-  PAID
   PROCESSING
   SHIPPED
   DELIVERED
@@ -41,6 +40,23 @@ model User {
   updatedAt     DateTime @updatedAt
   cart          Cart?
   orders        Order[]
+  Address       Address[]
+}
+
+model Address {
+  id          Int      @id @default(autoincrement())
+  userId      Int
+  fullName    String
+  phoneNumber String   @db.VarChar(15)
+  street      String
+  wardCode    String
+  districtId  Int
+  cityId      Int
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  orders      Order[]  @relation("AddressToOrder")
 }
 
 model Category {
@@ -127,22 +143,32 @@ model CartItem {
 }
 
 model Order {
-  id         Int      @id @default(autoincrement())
-  userId     Int
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
-  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  orderItems OrderItem[]
+  id             Int            @id @default(autoincrement())
+  userId         Int
+  shippingAddressId Int
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+  shippingAddress Address       @relation("AddressToOrder", fields: [shippingAddressId], references: [id])
+  orderItems     OrderItem[]
+  status         OrderStatus    @default(PENDING)
+  paymentMethod  String?        // COD, VNPay...
+  shippingFee    Int?           // phí ship
+  totalAmount    Int            // tổng tiền (tính sẵn)
+  trackingCode   String?        // mã vận đơn từ GHTK/Viettel Post
+  paidAt         DateTime?
+  deliveredAt    DateTime?
+
+  User User[]
 }
 
+
 model OrderItem {
-  id          Int      @id @default(autoincrement())
-  orderId     Int
-  status     OrderStatus   @default(PENDING)
+  id              Int      @id @default(autoincrement())
+  orderId         Int
   productDetailId Int
-  quantity    Int
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  productDetail ProductDetail @relation("ProductDetailToOrderItem", fields: [productDetailId], references: [id], onDelete: Cascade)
-  Order Order[]
+  quantity        Int
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  productDetail   ProductDetail @relation("ProductDetailToOrderItem", fields: [productDetailId], references: [id], onDelete: Cascade)
+  order           Order    @relation(fields: [orderId], references: [id])
 }
