@@ -73,37 +73,6 @@ export class ProductController {
     }
   }
 
-  @Get(':id')
-  async findOne(@Param('id') id: string): Promise<ApiResponse<any>> {
-    try {
-      return await this.productService.findOne(Number(id));
-    } catch (error: unknown) {
-      console.error('[ProductController] FindOne error:', error);
-      if (error instanceof HttpException) {
-        throw error;
-      }
-      throw new InternalServerErrorException('Failed to retrieve product');
-    }
-  }
-
-  @Get('sizes')
-  async findSizesByCategory(
-    @Query('category') categoryName: string,
-  ): Promise<ApiResponse<any>> {
-    try {
-      const data = await this.productService.findSizesByCategory(categoryName);
-      return data;
-    } catch (error: unknown) {
-      console.error('[ProductController] FindSizesByCategory error:', error);
-      if (error instanceof HttpException) {
-        throw error;
-      }
-      throw new InternalServerErrorException(
-        'Failed to retrieve sizes by category',
-      );
-    }
-  }
-
   @Get('colors')
   async findColorsByCategory(
     @Query('category') categoryName?: string,
@@ -125,6 +94,37 @@ export class ProductController {
       throw new InternalServerErrorException(
         'Failed to retrieve colors by category',
       );
+    }
+  }
+
+  @Get('sizes')
+  async findSizesByCategory(
+    @Query('category') categoryName: string,
+  ): Promise<ApiResponse<any>> {
+    try {
+      const data = await this.productService.findSizesByCategory(categoryName);
+      return data;
+    } catch (error: unknown) {
+      console.error('[ProductController] FindSizesByCategory error:', error);
+      if (error instanceof HttpException) {
+        throw error;
+      }
+      throw new InternalServerErrorException(
+        'Failed to retrieve sizes by category',
+      );
+    }
+  }
+
+  @Get(':id')
+  async findOne(@Param('id') id: string): Promise<ApiResponse<any>> {
+    try {
+      return await this.productService.findOne(Number(id));
+    } catch (error: unknown) {
+      console.error('[ProductController] FindOne error:', error);
+      if (error instanceof HttpException) {
+        throw error;
+      }
+      throw new InternalServerErrorException('Failed to retrieve product');
     }
   }
 

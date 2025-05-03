@@ -2,10 +2,10 @@ import { PrismaClient } from '@prisma/client';
 import { seedUsers } from './userSeeder';
 import { seedCategories } from './categorySeeder';
 import { seedProducts } from './productSeeder';
-import { seedProductDetails } from './productDetailSeeder';
-import { seedProductCategories } from './productCategorySeeder';
-import { seedCart } from './cartSeeder';
-import { seedProductImages } from './productImageSeeder';
+// import { seedProductDetails } from './productDetailSeeder';
+// import { seedProductCategories } from './productCategorySeeder';
+// import { seedCart } from './cartSeeder';
+// import { seedProductImages } from './productImageSeeder';
 
 const prisma = new PrismaClient();
 
@@ -31,22 +31,16 @@ async function main() {
   await seedCategories();
   console.log('✅ Seeded Categories');
 
-  await seedProducts();
+  await seedProducts('src/data/clothing.json');
+  await seedProducts('src/data/hair.json');
+  await seedProducts('src/data/jewelry.json');
+  await seedProducts('src/data/plus_size.json');
   console.log('✅ Seeded Products');
 
-  await seedProductImages();
-  console.log('✅ Seeded Product Images');
+  // await seedCart();
+  // console.log('✅ Seeded Cart');
 
-  await seedProductDetails();
-  console.log('✅ Seeded Product Details');
-
-  await seedProductCategories();
-  console.log('✅ Seeded Product Categories');
-
-  await seedCart();
-  console.log('✅ Seeded Cart');
-
-  console.log('🎉 Seeding completed!');
+  // console.log('🎉 Seeding completed!');
 }
 
 main()

@@ -12,5 +12,6 @@ export class Product {
   minPrice?: number;
   maxPrice?: number;
   colors?: string[];
+  sizes?: string[];
   productDetails?: ProductDetail[];
 }

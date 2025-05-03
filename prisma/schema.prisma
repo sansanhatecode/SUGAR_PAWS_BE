@@ -64,6 +64,8 @@ model Product {
   productDetails ProductDetail[]
   createdAt      DateTime           @default(now())
   updatedAt      DateTime           @updatedAt
+  vendor         String
+  tags           String[]
 }
 
 model ProductCategory {
@@ -97,7 +99,7 @@ model ProductDetail {
 
 model ProductImage {
   id          Int        @id @default(autoincrement())
-  url         String
+  url         String      @unique
   createdAt   DateTime    @default(now())
   updatedAt   DateTime    @updatedAt
   productDetails ProductDetail[]

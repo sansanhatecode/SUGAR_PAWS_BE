@@ -79,26 +79,33 @@ export class ProductService {
 
       const formattedProduct: Product = {
         ...product,
-        totalStock: product.productDetails.reduce(
-          (sum, detail) => sum + detail.stock,
+        totalStock: product.productDetails.reduce<number>(
+          (sum, detail) => sum + (detail.stock || 0),
           0,
         ),
-        totalSales: product.productDetails.reduce(
+        totalSales: product.productDetails.reduce<number>(
           (sum, detail) =>
-            sum + (Number.isFinite(detail.sale) ? detail.sale : 0),
+            sum + (Number.isFinite(detail.sale) ? Number(detail.sale) : 0),
           0,
         ),
         minPrice: product.productDetails.length
-          ? Math.min(...product.productDetails.map((detail) => detail.price))
+          ? Math.min(
+              ...product.productDetails.map((detail) => detail.price || 0),
+            )
           : 0,
         maxPrice: product.productDetails.length
-          ? Math.max(...product.productDetails.map((detail) => detail.price))
+          ? Math.max(
+              ...product.productDetails.map((detail) => detail.price || 0),
+            )
           : 0,
         colors: [
           ...new Set(
             product.productDetails
               .map((detail) => detail.color)
-              .filter((color): color is string => color !== null),
+              .filter(
+                (color): color is string =>
+                  color !== null && color !== undefined,
+              ),
           ),
         ],
         productDetails: product.productDetails.map((detail) => ({
@@ -128,26 +135,62 @@ export class ProductService {
     priceRange?: { min: number; max: number },
   ): Promise<ApiResponse<Product[]>> {
     try {
+      const formattedName = categoryName.toLowerCase().replace(/-/g, ' ');
       const category = await this.prisma.category.findUnique({
-        where: { name: categoryName },
-        include: {
-          products: {
-            include: {
-              product: {
-                include: {
-                  productDetails: true,
-                },
-              },
-            },
-          },
-        },
+        where: { name: formattedName },
       });
 
       if (!category) {
         throw new NotFoundException('Category not found');
       }
 
-      const products = category.products.map((p) => p.product);
+      // Get all child categories recursively
+      const getAllChildCategoryIds = async (
+        categoryId: number,
+      ): Promise<number[]> => {
+        const childCategories = await this.prisma.category.findMany({
+          where: { parentId: categoryId },
+        });
+
+        const childIds = [categoryId];
+
+        for (const child of childCategories) {
+          const descendants = await getAllChildCategoryIds(child.id);
+          childIds.push(...descendants);
+        }
+
+        return childIds;
+      };
+
+      // Get all category IDs (parent and all children)
+      const categoryIds = await getAllChildCategoryIds(category.id);
+
+      // Fetch all products that belong to any of these categories
+      const productsInCategories = await this.prisma.productCategory.findMany({
+        where: {
+          categoryId: {
+            in: categoryIds,
+          },
+        },
+        include: {
+          product: {
+            include: {
+              productDetails: true,
+            },
+          },
+        },
+      });
+
+      // Extract unique products
+      const productMap = new Map<
+        number,
+        (typeof productsInCategories)[0]['product']
+      >();
+      productsInCategories.forEach((pc) => {
+        productMap.set(pc.product.id, pc.product);
+      });
+
+      const products = Array.from(productMap.values());
 
       const formattedProducts = products.map((product) => {
         const productDetails = product.productDetails.map((detail) => ({
@@ -155,10 +198,21 @@ export class ProductService {
           size: detail.size ?? undefined,
         }));
 
-        return {
+        // Extract all sizes for the product
+        const sizes = [
+          ...new Set(
+            productDetails
+              .map((detail) => detail.size)
+              .filter(
+                (size): size is string => size !== null && size !== undefined,
+              ),
+          ),
+        ];
+
+        const formattedProduct: Product = {
           ...product,
           totalStock: productDetails.reduce(
-            (sum, detail) => sum + detail.stock,
+            (sum, detail) => sum + (detail.stock || 0),
             0,
           ),
           totalSales: productDetails.reduce(
@@ -167,20 +221,25 @@ export class ProductService {
             0,
           ),
           maxPrice: productDetails.length
-            ? Math.max(...productDetails.map((detail) => detail.price))
+            ? Math.max(...productDetails.map((detail) => detail.price || 0))
             : 0,
           minPrice: productDetails.length
-            ? Math.min(...productDetails.map((detail) => detail.price))
+            ? Math.min(...productDetails.map((detail) => detail.price || 0))
             : 0,
           colors: [
             ...new Set(productDetails.map((detail) => detail.color)),
-          ].filter((color): color is string => color !== null),
+          ].filter(
+            (color): color is string => color !== null && color !== undefined,
+          ),
+          sizes: sizes, // Add sizes array to each product
           productDetails: product.productDetails.map((detail) => ({
             ...detail,
             size: detail.size ?? undefined,
             color: detail.color ?? undefined,
           })),
         };
+
+        return formattedProduct;
       });
 
       // Filter products by color
@@ -188,14 +247,14 @@ export class ProductService {
 
       if (color) {
         filteredProducts = filteredProducts.filter((product) =>
-          product.productDetails.some((detail) => detail.color === color),
+          product.productDetails?.some((detail) => detail.color === color),
         );
       }
 
       // Filter products by size
       if (size) {
         filteredProducts = filteredProducts.filter((product) =>
-          product.productDetails.some((detail) => detail.size === size),
+          product.productDetails?.some((detail) => detail.size === size),
         );
       }
 
@@ -203,14 +262,14 @@ export class ProductService {
       if (availability !== undefined) {
         filteredProducts = filteredProducts.filter((product) =>
           availability === 1
-            ? product.totalStock > 0
+            ? product.totalStock! > 0
             : product.totalStock === 0,
         );
       }
 
       if (priceRange) {
         filteredProducts = filteredProducts.filter((product) =>
-          product.productDetails.some(
+          product.productDetails?.some(
             (detail) =>
               detail.price >= priceRange.min && detail.price <= priceRange.max,
           ),
@@ -219,11 +278,17 @@ export class ProductService {
 
       if (sortBy) {
         if (sortBy === 'priceAsc') {
-          filteredProducts.sort((a, b) => a.minPrice - b.minPrice);
+          filteredProducts.sort(
+            (a, b) => (a.minPrice || 0) - (b.minPrice || 0),
+          );
         } else if (sortBy === 'priceDesc') {
-          filteredProducts.sort((a, b) => b.maxPrice - a.maxPrice);
+          filteredProducts.sort(
+            (a, b) => (b.maxPrice || 0) - (a.maxPrice || 0),
+          );
         } else if (sortBy === 'bestSelling') {
-          filteredProducts.sort((a, b) => b.totalSales - a.totalSales);
+          filteredProducts.sort(
+            (a, b) => (b.totalSales || 0) - (a.totalSales || 0),
+          );
         }
       }
       return {
@@ -243,30 +308,59 @@ export class ProductService {
     try {
       const formattedName = categoryName.toLowerCase().replace(/-/g, ' ');
 
+      // Get the requested category
       const category = await this.prisma.category.findUnique({
         where: { name: formattedName },
-        include: {
-          products: {
-            include: {
-              product: {
-                include: {
-                  productDetails: true,
-                },
-              },
-            },
-          },
-        },
       });
 
       if (!category) {
         throw new NotFoundException('Category not found');
       }
 
-      const sizes = category.products.flatMap((p) =>
-        p.product.productDetails.map((detail) => detail.size),
+      // Get all child categories recursively
+      const getAllChildCategoryIds = async (
+        categoryId: number,
+      ): Promise<number[]> => {
+        const childCategories = await this.prisma.category.findMany({
+          where: { parentId: categoryId },
+        });
+
+        const childIds = [categoryId];
+
+        for (const child of childCategories) {
+          const descendants = await getAllChildCategoryIds(child.id);
+          childIds.push(...descendants);
+        }
+
+        return childIds;
+      };
+
+      // Get all category IDs (parent and all children)
+      const categoryIds = await getAllChildCategoryIds(category.id);
+
+      // Fetch all products that belong to any of these categories
+      const productsInCategories = await this.prisma.productCategory.findMany({
+        where: {
+          categoryId: {
+            in: categoryIds,
+          },
+        },
+        include: {
+          product: {
+            include: {
+              productDetails: true,
+            },
+          },
+        },
+      });
+
+      // Extract all sizes from all products in these categories
+      const sizes = productsInCategories.flatMap((pc) =>
+        pc.product.productDetails.map((detail) => detail.size),
       );
 
-      const uniqueSizes = [...new Set(sizes)];
+      // Filter out null/undefined values and get unique sizes
+      const uniqueSizes = [...new Set(sizes.filter(Boolean))];
 
       return {
         statusCode: HttpStatus.OK,
@@ -285,30 +379,59 @@ export class ProductService {
     try {
       const formattedName = categoryName.toLowerCase().replace(/-/g, ' ');
 
+      // Get the requested category
       const category = await this.prisma.category.findUnique({
         where: { name: formattedName },
-        include: {
-          products: {
-            include: {
-              product: {
-                include: {
-                  productDetails: true,
-                },
-              },
-            },
-          },
-        },
       });
 
       if (!category) {
         throw new NotFoundException('Category not found');
       }
 
-      const colors = category.products.flatMap((p) =>
-        p.product.productDetails.map((detail) => detail.color),
+      // Get all child categories recursively
+      const getAllChildCategoryIds = async (
+        categoryId: number,
+      ): Promise<number[]> => {
+        const childCategories = await this.prisma.category.findMany({
+          where: { parentId: categoryId },
+        });
+
+        const childIds = [categoryId];
+
+        for (const child of childCategories) {
+          const descendants = await getAllChildCategoryIds(child.id);
+          childIds.push(...descendants);
+        }
+
+        return childIds;
+      };
+
+      // Get all category IDs (parent and all children)
+      const categoryIds = await getAllChildCategoryIds(category.id);
+
+      // Fetch all products that belong to any of these categories
+      const productsInCategories = await this.prisma.productCategory.findMany({
+        where: {
+          categoryId: {
+            in: categoryIds,
+          },
+        },
+        include: {
+          product: {
+            include: {
+              productDetails: true,
+            },
+          },
+        },
+      });
+
+      // Extract all colors from all products in these categories
+      const colors = productsInCategories.flatMap((pc) =>
+        pc.product.productDetails.map((detail) => detail.color),
       );
 
-      const uniqueColors = [...new Set(colors)];
+      // Filter out null/undefined values and get unique colors
+      const uniqueColors = [...new Set(colors.filter(Boolean))];
 
       return {
         statusCode: HttpStatus.OK,
