@@ -83,4 +83,34 @@ export class ProductDetailService {
       throw new NotFoundException(`Product detail with ID ${id} not found`);
     }
   }
+
+  async findById(id: number): Promise<ApiResponse<ProductDetail>> {
+    try {
+      const productDetail = await this.prisma.productDetail.findUnique({
+        where: { id },
+      });
+
+      if (!productDetail) {
+        throw new NotFoundException(`Product detail with ID ${id} not found`);
+      }
+
+      return {
+        statusCode: HttpStatus.OK,
+        message: 'Product detail retrieved successfully',
+        data: {
+          ...productDetail,
+          size: productDetail.size ?? undefined,
+          color: productDetail.color ?? undefined,
+        },
+      };
+    } catch (error) {
+      console.error(error);
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
+      throw new InternalServerErrorException(
+        error instanceof Error ? error.message : 'Unknown error',
+      );
+    }
+  }
 }

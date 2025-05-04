@@ -9,10 +9,14 @@ import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
 import { ApiResponse } from 'src/common/response.types';
 import { Product } from './product.model';
+import { ProductDetailService } from '../product-detail/product-detail.service';
 
 @Injectable()
 export class ProductService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private productDetailService: ProductDetailService,
+  ) {}
 
   async findAll(): Promise<ApiResponse<Product[]>> {
     try {
@@ -69,7 +73,11 @@ export class ProductService {
       const product = await this.prisma.product.findUnique({
         where: { id: productId },
         include: {
-          productDetails: true,
+          productDetails: {
+            include: {
+              image: true,
+            },
+          },
         },
       });
 
@@ -128,8 +136,8 @@ export class ProductService {
 
   async findByCategory(
     categoryName: string,
-    color?: string,
-    size?: string,
+    colors?: string[],
+    sizes?: string[],
     availability?: number,
     sortBy?: 'priceAsc' | 'priceDesc' | 'bestSelling',
     priceRange?: { min: number; max: number },
@@ -231,7 +239,7 @@ export class ProductService {
           ].filter(
             (color): color is string => color !== null && color !== undefined,
           ),
-          sizes: sizes, // Add sizes array to each product
+          sizes: sizes,
           productDetails: product.productDetails.map((detail) => ({
             ...detail,
             size: detail.size ?? undefined,
@@ -242,19 +250,23 @@ export class ProductService {
         return formattedProduct;
       });
 
-      // Filter products by color
+      // Filter products by colors
       let filteredProducts = formattedProducts;
 
-      if (color) {
+      if (colors && colors.length > 0) {
         filteredProducts = filteredProducts.filter((product) =>
-          product.productDetails?.some((detail) => detail.color === color),
+          product.productDetails?.some(
+            (detail) => detail.color && colors.includes(detail.color),
+          ),
         );
       }
 
-      // Filter products by size
-      if (size) {
+      // Filter products by sizes
+      if (sizes && sizes.length > 0) {
         filteredProducts = filteredProducts.filter((product) =>
-          product.productDetails?.some((detail) => detail.size === size),
+          product.productDetails?.some(
+            (detail) => detail.size && sizes.includes(detail.size),
+          ),
         );
       }
 
@@ -487,6 +499,41 @@ export class ProductService {
     } catch (error) {
       console.error(error);
       throw new NotFoundException(`Product with ID ${id} not found`);
+    }
+  }
+
+  async getProductNameByProductDetailId(
+    productDetailId: number,
+  ): Promise<ApiResponse<string>> {
+    try {
+      const response =
+        await this.productDetailService.findById(productDetailId);
+      const productDetail = response.data;
+      if (!productDetail) {
+        throw new NotFoundException(
+          `ProductDetail with ID ${productDetailId} not found`,
+        );
+      }
+      const product = await this.prisma.product.findUnique({
+        where: { id: productDetail.productId },
+        select: { name: true },
+      });
+      if (!product) {
+        throw new NotFoundException(
+          `Product with ID ${productDetail.productId} not found`,
+        );
+      }
+      return {
+        statusCode: HttpStatus.OK,
+        message: 'Product name retrieved successfully',
+        data: product.name,
+      };
+    } catch (error) {
+      console.error(error);
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
+      throw new InternalServerErrorException('Failed to fetch product name');
     }
   }
 }

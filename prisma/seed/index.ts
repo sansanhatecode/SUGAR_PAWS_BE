@@ -2,6 +2,7 @@ import { PrismaClient } from '@prisma/client';
 import { seedUsers } from './userSeeder';
 import { seedCategories } from './categorySeeder';
 import { seedProducts } from './productSeeder';
+import { seedCart } from './cartSeeder';
 // import { seedProductDetails } from './productDetailSeeder';
 // import { seedProductCategories } from './productCategorySeeder';
 // import { seedCart } from './cartSeeder';
@@ -35,6 +36,7 @@ async function main() {
   await seedProducts('src/data/hair.json');
   await seedProducts('src/data/jewelry.json');
   await seedProducts('src/data/plus_size.json');
+  await seedCart();
   console.log('✅ Seeded Products');
 
   // await seedCart();

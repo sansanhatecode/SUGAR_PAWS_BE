@@ -7,5 +7,6 @@ import { ProductDetailController } from './product-detail.controller';
 @Module({
   controllers: [ProductDetailController],
   providers: [ProductDetailService, PrismaService],
+  exports: [ProductDetailService],
 })
-export class ProductModule {}
+export class ProductDetailModule {}

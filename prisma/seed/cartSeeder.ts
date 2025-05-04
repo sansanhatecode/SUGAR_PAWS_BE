@@ -21,17 +21,4 @@ export async function seedCart() {
       },
     });
   }
-
-  // Thêm nhiều CartItems
-  const cartItemsData = productDetails.map((productDetail, index) => ({
-    productDetailId: productDetail.id,
-    quantity: index + 1,
-  }));
-
-  await prisma.cartItem.createMany({
-    data: cartItemsData.map((item) => ({
-      ...item,
-      cartId: cart.id,
-    })),
-  });
 }

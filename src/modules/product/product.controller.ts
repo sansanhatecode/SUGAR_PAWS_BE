@@ -39,8 +39,8 @@ export class ProductController {
   @Get('category')
   async findByCategory(
     @Query('category') categoryName?: string,
-    @Query('color') color?: string,
-    @Query('size') size?: string,
+    @Query('colors') colors?: string[],
+    @Query('sizes') sizes?: string[],
     @Query('sortBy') sortBy?: 'priceAsc' | 'priceDesc' | 'bestSelling',
     @Query('avaiability') avaiability?: number,
     @Query('minPrice') minPrice?: number,
@@ -56,8 +56,8 @@ export class ProductController {
       };
       return await this.productService.findByCategory(
         categoryName,
-        color,
-        size,
+        colors,
+        sizes,
         avaiability,
         sortBy,
         priceRange,
