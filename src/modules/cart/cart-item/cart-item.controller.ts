@@ -1,4 +1,12 @@
-import { Body, Controller, Post, Req, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Param,
+  Post,
+  Req,
+  UseGuards,
+} from '@nestjs/common';
 import { CartItemService } from './cart-item.service';
 import { CreateCartItemDto } from './dto/create-cart-item.dto';
 import { CartItem } from './cart-item.model';
@@ -18,5 +26,14 @@ export class CartItemController {
   ): Promise<ApiResponse<CartItem>> {
     const userId = req.user?.userId;
     return this.cartItemService.addCartItem(Number(userId), dto);
+  }
+
+  @Delete(':id')
+  async removeCartItem(
+    @Req() req: AuthenticatedRequest,
+    @Param('id') id: string,
+  ): Promise<ApiResponse<null>> {
+    const userId = req.user?.userId;
+    return this.cartItemService.removeCartItem(Number(userId), Number(id));
   }
 }

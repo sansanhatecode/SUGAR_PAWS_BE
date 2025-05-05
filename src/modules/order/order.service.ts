@@ -8,19 +8,27 @@ import {
 import { PrismaService } from 'src/prisma.service';
 import { Order } from './order.model';
 import { ApiResponse } from 'src/common/response.types';
+import { CreateOrderDto } from './dto/create-order.dto';
+import { UpdateOrderDto } from './dto/update-order.dto';
 
 @Injectable()
 export class OrderService {
   constructor(private prisma: PrismaService) {}
 
-  async create(data: CreateOrderDto): Promise<ApiResponse<Order>> {
+  async create(data: CreateOrderDto): Promise<ApiResponse<any>> {
     try {
       if (!data.userId || !data.shippingAddressId || !data.totalAmount) {
         throw new BadRequestException('Missing required fields');
       }
 
+      const { orderItems, ...orderData } = data;
       const order = await this.prisma.order.create({
-        data,
+        data: {
+          ...orderData,
+          orderItems: {
+            create: orderItems,
+          },
+        },
         include: {
           shippingAddress: true,
           orderItems: true,
@@ -40,11 +48,25 @@ export class OrderService {
     }
   }
 
-  async update(id: number, data: UpdateOrderDto): Promise<ApiResponse<Order>> {
+  async update(id: number, data: UpdateOrderDto): Promise<ApiResponse<any>> {
     try {
+      const { shippingAddressId, ...restData } = data;
+
+      // Create properly structured update object
+      const updateData: any = {
+        ...restData,
+      };
+
+      // Only add shipping address connection if shippingAddressId is provided
+      if (shippingAddressId !== undefined) {
+        updateData.shippingAddress = {
+          connect: { id: shippingAddressId },
+        };
+      }
+
       const order = await this.prisma.order.update({
         where: { id },
-        data,
+        data: updateData,
         include: {
           shippingAddress: true,
           orderItems: true,
@@ -79,7 +101,7 @@ export class OrderService {
     }
   }
 
-  async findById(id: number): Promise<ApiResponse<Order>> {
+  async findById(id: number): Promise<ApiResponse<any>> {
     try {
       const order = await this.prisma.order.findUnique({
         where: { id },
@@ -92,10 +114,19 @@ export class OrderService {
         throw new NotFoundException(`Order with ID ${id} not found`);
       }
 
+      // Transform null to undefined for paidAt, deliveredAt and paymentMethod to match Order model
+      const orderData = {
+        ...order,
+        paidAt: order.paidAt === null ? undefined : order.paidAt,
+        deliveredAt: order.deliveredAt === null ? undefined : order.deliveredAt,
+        paymentMethod:
+          order.paymentMethod === null ? undefined : order.paymentMethod,
+      };
+
       return {
         statusCode: HttpStatus.OK,
         message: 'Order fetched successfully',
-        data: order,
+        data: orderData,
       };
     } catch (error) {
       console.error(error);

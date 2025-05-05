@@ -9,7 +9,7 @@ export class Order {
   updatedAt: Date;
   paidAt?: Date;
   deliveredAt?: Date;
-  paymentMethod?: string; // e.g., 'COD', 'VNPay'
+  paymentMethod?: string;
   shippingFee?: number;
   totalAmount: number;
   trackingCode?: string;

@@ -40,23 +40,7 @@ model User {
   updatedAt     DateTime @updatedAt
   cart          Cart?
   orders        Order[]
-  Address       Address[]
-}
-
-model Address {
-  id          Int      @id @default(autoincrement())
-  userId      Int
-  fullName    String
-  phoneNumber String   @db.VarChar(15)
-  street      String
-  wardCode    String
-  districtId  Int
-  cityId      Int
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  orders      Order[]  @relation("AddressToOrder")
+  shippingAddresses ShippingAddress[]
 }
 
 model Category {
@@ -148,19 +132,18 @@ model Order {
   shippingAddressId Int
   createdAt      DateTime       @default(now())
   updatedAt      DateTime       @updatedAt
-  shippingAddress Address       @relation("AddressToOrder", fields: [shippingAddressId], references: [id])
+  shippingAddress ShippingAddress  @relation(fields: [shippingAddressId], references: [id])
   orderItems     OrderItem[]
   status         OrderStatus    @default(PENDING)
-  paymentMethod  String?        // COD, VNPay...
-  shippingFee    Int?           // phí ship
-  totalAmount    Int            // tổng tiền (tính sẵn)
-  trackingCode   String?        // mã vận đơn từ GHTK/Viettel Post
+  paymentMethod  String?        
+  shippingFee    Int?           
+  totalAmount    Int            
+  trackingCode   String?  
   paidAt         DateTime?
   deliveredAt    DateTime?
 
-  User User[]
+  user           User           @relation(fields: [userId], references: [id])
 }
-
 
 model OrderItem {
   id              Int      @id @default(autoincrement())
@@ -171,4 +154,49 @@ model OrderItem {
   updatedAt       DateTime @updatedAt
   productDetail   ProductDetail @relation("ProductDetailToOrderItem", fields: [productDetailId], references: [id], onDelete: Cascade)
   order           Order    @relation(fields: [orderId], references: [id])
+}
+
+model ShippingAddress {
+  id              Int      @id @default(autoincrement())
+  userId          Int
+  fullName        String
+  phoneNumber     String   @db.VarChar(15)
+  homeNumber      String
+  streetName      Int
+  wardCode        Int
+  isDefault       Boolean  @default(false)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  moreDetail      String
+
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  ward            Ward     @relation(fields: [wardCode], references: [wardCode], onDelete: Cascade)
+
+  orders      Order[]
+}
+
+model Ward {
+  wardCode      Int  @id
+  name          String
+  districtCode  Int
+
+  district      District    @relation(fields: [districtCode], references: [districtCode], onDelete: Cascade)
+  
+  shippingAddress   ShippingAddress[]
+}
+
+model District {
+  districtCode     Int      @id
+  name             String
+  cityCode         Int
+
+  city             City     @relation(fields: [cityCode], references: [cityCode], onDelete: Cascade)
+  wards            Ward[]
+}
+
+model City {
+  cityCode    Int      @id
+  name        String
+
+  districts   District[]
 }

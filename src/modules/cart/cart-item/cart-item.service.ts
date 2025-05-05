@@ -19,6 +19,19 @@ export class CartItemService {
     dto: CreateCartItemDto,
   ): Promise<ApiResponse<CartItem>> {
     try {
+      // First check if user exists
+      const user = await prisma.user.findUnique({
+        where: { id: userId },
+      });
+
+      if (!user) {
+        return {
+          statusCode: HttpStatus.NOT_FOUND,
+          message: 'User not found',
+          error: 'User does not exist',
+        };
+      }
+
       // Kiểm tra xem cart của user có tồn tại không, nếu không thì tạo mới
       let cart = await prisma.cart.findUnique({
         where: { userId },
@@ -39,16 +52,44 @@ export class CartItemService {
         throw new NotFoundException('ProductDetail not found');
       }
 
+      // Kiểm tra xem sản phẩm đã tồn tại trong giỏ hàng chưa
+      const existingCartItem = await prisma.cartItem.findFirst({
+        where: {
+          cartId: cart.id,
+          productDetailId: dto.productDetailId,
+        },
+      });
+
       // Kiểm tra số lượng yêu cầu có vượt quá số lượng hiện có của sản phẩm hay không
-      if (dto.quantity > productDetail.stock) {
+      const newQuantity = existingCartItem
+        ? existingCartItem.quantity + dto.quantity
+        : dto.quantity;
+
+      if (newQuantity > productDetail.stock) {
         return {
           statusCode: HttpStatus.BAD_REQUEST,
           message: 'Quantity exceeds available stock',
           error: 'Invalid quantity',
         };
       }
-      // Thêm sản phẩm vào giỏ hàng
-      const cartItem = await prisma.cartItem.create({
+
+      let cartItem: CartItem;
+
+      if (existingCartItem) {
+        cartItem = await prisma.cartItem.update({
+          where: { id: existingCartItem.id },
+          data: { quantity: newQuantity },
+        });
+
+        return {
+          statusCode: HttpStatus.OK,
+          message: 'CartItem quantity updated successfully',
+          data: cartItem,
+        };
+      }
+
+      // Nếu sản phẩm chưa tồn tại trong giỏ hàng, tạo mới
+      cartItem = await prisma.cartItem.create({
         data: {
           cartId: cart.id,
           productDetailId: dto.productDetailId,
