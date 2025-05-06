@@ -8,6 +8,7 @@ import {
   Param,
   ParseIntPipe,
   Post,
+  Req,
   Res,
   UseGuards,
 } from '@nestjs/common';
@@ -16,6 +17,7 @@ import { Response } from 'express';
 import { User } from './user.model';
 import { GetUsersResponseDto } from './dto/get-users-response.dto';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
+import { AuthenticatedRequest } from 'src/common/request.types';
 
 @UseGuards(JwtAuthGuard)
 @Controller('users')
@@ -58,6 +60,45 @@ export class UserController {
         status: 'Ok!',
         message: 'Successfully fetched data!',
         data: result,
+      });
+    } catch (error: unknown) {
+      console.error(error);
+      const status =
+        error instanceof HttpException
+          ? error.getStatus()
+          : HttpStatus.INTERNAL_SERVER_ERROR;
+      return response.status(status).json({
+        status: 'Error',
+        message:
+          error instanceof HttpException
+            ? error.message
+            : 'Internal Server Error!',
+      });
+    }
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Get('me')
+  async getUserInfo(
+    @Req() request: AuthenticatedRequest,
+    @Res() response: Response,
+  ) {
+    try {
+      const userId = request?.user?.userId;
+
+      if (!userId) {
+        throw new HttpException(
+          'User not authenticated',
+          HttpStatus.UNAUTHORIZED,
+        );
+      }
+
+      const userInfo = await this.userService.findById(Number(userId));
+
+      return response.status(HttpStatus.OK).json({
+        status: 'Ok!',
+        message: 'User information retrieved successfully',
+        data: userInfo,
       });
     } catch (error: unknown) {
       console.error(error);

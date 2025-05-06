@@ -128,4 +128,33 @@ export class UserService {
       throw new InternalServerErrorException('Something went wrong');
     }
   }
+
+  async findById(id: number) {
+    try {
+      const user = await this.prisma.user.findUnique({
+        where: { id },
+        select: {
+          id: true,
+          username: true,
+          email: true,
+          name: true,
+          role: true,
+        },
+      });
+
+      if (!user) {
+        throw new NotFoundException('User not found');
+      }
+
+      return user;
+    } catch (error: unknown) {
+      if (
+        error instanceof PrismaClientKnownRequestError &&
+        error.code === 'P2025'
+      ) {
+        throw new NotFoundException('User not found');
+      }
+      throw new InternalServerErrorException('Something went wrong');
+    }
+  }
 }
