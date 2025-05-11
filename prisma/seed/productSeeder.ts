@@ -150,12 +150,9 @@ export async function seedProducts(fileAddress: string) {
               const productImage = await prisma.productImage.upsert({
                 where: { url: imageUrl },
                 create: { url: imageUrl },
-                update: {}, // No update needed if image exists
+                update: {},
               });
               imageId = productImage.id;
-              console.log(
-                `      Product Image (ID: ${imageId}) handled for URL (from media): ${imageUrl}`,
-              );
             } catch (imageError) {
               console.error(
                 `      Error handling Product Image for URL ${imageUrl} (from media):`,
@@ -168,16 +165,11 @@ export async function seedProducts(fileAddress: string) {
           // Determine size and color from options
           let size: string | null = null;
           let color: string | null = null;
-          const optionName = item.options?.[0]?.toLowerCase(); // Get the name of the first option
+          let type: string | null = null;
 
-          if (optionName === 'color') {
-            color = detail.option1 || null;
-          } else if (optionName === 'size') {
-            size = detail.option1 || null;
-          }
-          // If optionName is 'title' and option1 is 'Default Title', leave size and color null.
-          // If optionName is 'title' and option1 is something else, maybe assign to color?
-          // For now, stick to 'color' and 'size' based on option name.
+          color = detail.option1 || null;
+          size = detail.option1 || null;
+          type = detail.option3 || null;
 
           // Create the ProductDetail
           await prisma.productDetail.create({
@@ -185,6 +177,7 @@ export async function seedProducts(fileAddress: string) {
               productId: createdProduct.id,
               size: size,
               color: color,
+              type: type,
               stock: detail.inventory_quantity || 0,
               price: (detail.price || 0) / 100, // Assume price is in cents, convert to dollars
               sale: Math.floor(Math.random() * 100), // Default to 0 as per schema

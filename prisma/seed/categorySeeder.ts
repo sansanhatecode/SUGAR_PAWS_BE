@@ -14,7 +14,7 @@ export async function seedCategories() {
         'parasols',
         'wristcuffs',
         'bags',
-        'pins and patches',
+        'pins-and-patches',
         'shoes',
       ],
     },
@@ -27,16 +27,16 @@ export async function seedCategories() {
       subcategories: ['flats', 'heels', 'platforms'],
     },
     {
-      name: 'pins and patches',
-      subcategories: ['brooches', 'buttons', 'enamel pins', 'patches'],
+      name: 'pins-and-patches',
+      subcategories: ['brooches', 'buttons', 'enamel-pins', 'patches'],
     },
     {
       name: 'hair',
       subcategories: [
         'bows',
-        'hair claws',
+        'hair-claws',
         'scrunchies',
-        'star clips',
+        'star-clips',
         'hats',
         'headbands',
       ],
@@ -59,7 +59,7 @@ export async function seedCategories() {
       name: 'tops',
       subcategories: [
         'blouses',
-        'button up shirts',
+        'button-up-shirts',
         't-shirts',
         'sweaters',
         'cardigans',
@@ -76,11 +76,11 @@ export async function seedCategories() {
     {
       name: 'plus size',
       subcategories: [
-        'plus size dresses',
-        'plus size skirts',
-        'plus size blouses',
-        'plus size petticoat & bloomers',
-        'plus size tops',
+        'plus-size-dresses',
+        'plus-size-skirts',
+        'plus-size-blouses',
+        'plus-size-petticoat-bloomers',
+        'plus-size-tops',
       ],
     },
     {
