@@ -72,10 +72,11 @@ export class AuthController {
     return result;
   }
 
-  // @Post('send-code')
-  // async sendCode(@Body('email') email: string) {
-  //   const code = this.authService.generateVerificationCode();
-  //   await this.mailService.sendVerificationEmail(email, code);
-  //   return { message: 'Validate code sent', data: { code } };
-  // }
+  @Post('send-code')
+  async sendCode(@Body('email') email: string) {
+    const code = this.authService.generateVerificationCode();
+    await this.authService.setVerificationCodeToCache(email, code);
+    await this.mailService.sendVerificationEmail(email, code);
+    return { message: 'Validate code sent', data: { code } };
+  }
 }

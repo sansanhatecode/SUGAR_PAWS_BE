@@ -12,6 +12,7 @@ import * as bcrypt from 'bcrypt';
 import { SignupDto } from './dto/signup.dto';
 import { MailService } from '../modules/mail/mail.service';
 import { Cache } from 'cache-manager';
+import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import { UserService } from 'src/modules/user/user.service';
 
 @Injectable()
@@ -20,11 +21,22 @@ export class AuthService {
     private readonly userService: UserService,
     private readonly jwtService: JwtService,
     private readonly mailService: MailService,
-    @Inject('CACHE_MANAGER') private readonly cacheManager: Cache,
+    @Inject(CACHE_MANAGER)
+    private readonly cacheManager: Cache & {
+      set<T>(key: string, value: T, options?: { ttl: number }): Promise<void>;
+      get<T>(key: string): Promise<T | undefined>;
+      del(key: string): Promise<void>;
+    },
   ) {}
 
   generateVerificationCode(): string {
     return Math.floor(100000 + Math.random() * 900000).toString();
+  }
+
+  async setVerificationCodeToCache(email: string, code: string): Promise<void> {
+    const cacheKey = `verify:${email}`;
+    await this.cacheManager.set(cacheKey, code, { ttl: 300 });
+    console.log('Set cache key:', cacheKey, 'with code:', code);
   }
 
   async signup(signupDto: SignupDto): Promise<{ message: string }> {
@@ -35,7 +47,7 @@ export class AuthService {
       }
       const code = this.generateVerificationCode();
       await this.mailService.sendVerificationEmail(signupDto.email, code);
-      await this.cacheManager.set(`verify:${signupDto.email}`, code, 300);
+      await this.setVerificationCodeToCache(signupDto.email, code);
       return {
         message: `Verification code sent successfully to ${signupDto.email}`,
       };
@@ -52,7 +64,6 @@ export class AuthService {
     email: string,
     inputCode: string,
   ): Promise<{ verified: boolean; access_token?: string }> {
-    console.log('email:', email.length);
     const storedCode = await this.cacheManager.get(`verify:${email}`);
     console.log(storedCode, inputCode);
 
