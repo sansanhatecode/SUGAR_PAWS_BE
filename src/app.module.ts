@@ -10,6 +10,7 @@ import { CartItemModule } from './modules/cart/cart-item/cart-item.module';
 import { ViettelPostModule } from './modules/viettel-post/viettel-post.module';
 import { AddressModule as AddressFeatureModule } from './modules/address/address.module';
 import { ShippingAddressModule } from './modules/address/shipping-address/shipping-address.module';
+import { OrderModule } from './modules/order/order.module';
 
 @Module({
   imports: [
@@ -37,6 +38,7 @@ import { ShippingAddressModule } from './modules/address/shipping-address/shippi
     ViettelPostModule,
     AddressFeatureModule,
     ShippingAddressModule,
+    OrderModule,
   ],
 })
 export class AppModule {}

@@ -1,138 +1,69 @@
-import {
-  Injectable,
-  NotFoundException,
-  InternalServerErrorException,
-  BadRequestException,
-  HttpStatus,
-} from '@nestjs/common';
-import { PrismaService } from 'src/prisma.service';
-import { Order } from './order.model';
-import { ApiResponse } from 'src/common/response.types';
+import { Injectable } from '@nestjs/common';
+import { PrismaService } from '../../prisma.service';
 import { CreateOrderDto } from './dto/create-order.dto';
-import { UpdateOrderDto } from './dto/update-order.dto';
+import { OrderResponseDto } from './dto/order-response.dto';
 
 @Injectable()
 export class OrderService {
-  constructor(private prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService) {}
 
-  async create(data: CreateOrderDto): Promise<ApiResponse<any>> {
-    try {
-      if (!data.userId || !data.shippingAddressId || !data.totalAmount) {
-        throw new BadRequestException('Missing required fields');
-      }
+  async createOrder(
+    userId: number,
+    dto: CreateOrderDto,
+  ): Promise<OrderResponseDto> {
+    // Validate productDetailId existence
+    const productDetailIds = dto.orderItems.map((item) => item.productDetailId);
+    const existingProductDetails = await this.prisma.productDetail.findMany({
+      where: { id: { in: productDetailIds } },
+      select: { id: true },
+    });
 
-      const { orderItems, ...orderData } = data;
-      const order = await this.prisma.order.create({
-        data: {
-          ...orderData,
-          orderItems: {
-            create: orderItems,
-          },
-        },
-        include: {
-          shippingAddress: true,
-          orderItems: true,
-        },
-      });
+    const existingProductDetailIds = new Set(
+      existingProductDetails.map((pd) => pd.id),
+    );
+    const invalidProductDetailIds = productDetailIds.filter(
+      (id) => !existingProductDetailIds.has(id),
+    );
 
-      return {
-        statusCode: HttpStatus.CREATED,
-        message: 'Order created successfully',
-        data: order,
-      };
-    } catch (error) {
-      console.error(error);
-      throw new InternalServerErrorException(
-        error instanceof Error ? error.message : 'Unknown error',
+    if (invalidProductDetailIds.length > 0) {
+      throw new Error(
+        `Invalid productDetailId(s): ${invalidProductDetailIds.join(', ')}`,
       );
     }
-  }
 
-  async update(id: number, data: UpdateOrderDto): Promise<ApiResponse<any>> {
-    try {
-      const { shippingAddressId, ...restData } = data;
-
-      // Create properly structured update object
-      const updateData: any = {
-        ...restData,
-      };
-
-      // Only add shipping address connection if shippingAddressId is provided
-      if (shippingAddressId !== undefined) {
-        updateData.shippingAddress = {
-          connect: { id: shippingAddressId },
-        };
-      }
-
-      const order = await this.prisma.order.update({
-        where: { id },
-        data: updateData,
-        include: {
-          shippingAddress: true,
-          orderItems: true,
+    // Create the order
+    const order = await this.prisma.order.create({
+      data: {
+        userId,
+        shippingAddressId: dto.shippingAddressId,
+        status: dto.status,
+        shippingFee: dto.shippingFee,
+        totalAmount: dto.totalAmount,
+        trackingCode: dto.trackingCode,
+        orderItems: {
+          create: dto.orderItems.map((item) => ({
+            productDetailId: item.productDetailId,
+            quantity: item.quantity,
+          })),
         },
-      });
-
-      return {
-        statusCode: HttpStatus.OK,
-        message: 'Order updated successfully',
-        data: order,
-      };
-    } catch (error) {
-      console.error(error);
-      throw new NotFoundException(
-        error instanceof Error ? error.message : 'Order not found',
-      );
-    }
+      },
+      include: {
+        orderItems: true,
+        shippingAddress: true,
+      },
+    });
+    return order as unknown as OrderResponseDto;
   }
 
-  async delete(id: number): Promise<ApiResponse<void>> {
-    try {
-      await this.prisma.order.delete({
-        where: { id },
-      });
-      return {
-        statusCode: HttpStatus.OK,
-        message: 'Order deleted successfully',
-      };
-    } catch (error) {
-      console.error(error);
-      throw new NotFoundException(`Order with ID ${id} not found`);
-    }
-  }
-
-  async findById(id: number): Promise<ApiResponse<any>> {
-    try {
-      const order = await this.prisma.order.findUnique({
-        where: { id },
-        include: {
-          shippingAddress: true,
-          orderItems: true,
-        },
-      });
-      if (!order) {
-        throw new NotFoundException(`Order with ID ${id} not found`);
-      }
-
-      // Transform null to undefined for paidAt, deliveredAt and paymentMethod to match Order model
-      const orderData = {
-        ...order,
-        paidAt: order.paidAt === null ? undefined : order.paidAt,
-        deliveredAt: order.deliveredAt === null ? undefined : order.deliveredAt,
-        paymentMethod:
-          order.paymentMethod === null ? undefined : order.paymentMethod,
-      };
-
-      return {
-        statusCode: HttpStatus.OK,
-        message: 'Order fetched successfully',
-        data: orderData,
-      };
-    } catch (error) {
-      console.error(error);
-      throw new InternalServerErrorException(
-        error instanceof Error ? error.message : 'Unknown error',
-      );
-    }
+  async getOrdersByUser(userId: number): Promise<OrderResponseDto[]> {
+    const orders = await this.prisma.order.findMany({
+      where: { userId },
+      include: {
+        orderItems: true,
+        shippingAddress: true,
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+    return orders as unknown as OrderResponseDto[];
   }
 }

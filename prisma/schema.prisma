@@ -140,7 +140,7 @@ model Order {
   shippingAddress ShippingAddress  @relation(fields: [shippingAddressId], references: [id])
   orderItems     OrderItem[]
   status         OrderStatus    @default(PENDING)
-  paymentMethod  String?        
+  payId          Int?   @unique
   shippingFee    Int?           
   totalAmount    Int            
   trackingCode   String?  
@@ -148,6 +148,7 @@ model Order {
   deliveredAt    DateTime?
 
   user           User           @relation(fields: [userId], references: [id])
+  payment        Payment?        @relation(fields: [payId], references: [id], onDelete: Cascade)
 }
 
 model OrderItem {
@@ -159,6 +160,21 @@ model OrderItem {
   updatedAt       DateTime @updatedAt
   productDetail   ProductDetail @relation("ProductDetailToOrderItem", fields: [productDetailId], references: [id], onDelete: Cascade)
   order           Order    @relation(fields: [orderId], references: [id])
+}
+
+model Payment {
+  id             Int       @id @default(autoincrement())
+  orderId        Int       @unique
+  method         String
+  status         String    // UNPAID, PAID, FAILED, REFUNDED
+  amount         Int       
+  transactionId  String?   
+  responseData   Json?     
+  paidAt         DateTime?
+
+  order          Order?     @relation()
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
 }
 
 model ShippingAddress {

@@ -26,10 +26,6 @@ class CreateOrderItemDto {
 export class CreateOrderDto {
   @IsInt()
   @IsNotEmpty()
-  userId: number;
-
-  @IsInt()
-  @IsNotEmpty()
   shippingAddressId: number;
 
   @IsString()
