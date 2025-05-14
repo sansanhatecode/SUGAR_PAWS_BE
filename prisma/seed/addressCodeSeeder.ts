@@ -11,6 +11,8 @@ interface CityData {
 
 interface DistrictData {
   parent_code: string;
+  name_with_type: string;
+  code: string;
 }
 
 interface WardData {
@@ -74,7 +76,7 @@ export async function seedAddressCodes() {
       await prisma.district.create({
         data: {
           districtCode: parseInt(code),
-          name: `District ${code}`, // You might want to add actual names if available
+          name: data.name_with_type,
           cityCode: parseInt(data.parent_code),
         },
       });

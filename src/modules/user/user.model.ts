@@ -9,4 +9,9 @@ export class User {
   role: UserRole;
   createdAt: Date;
   updatedAt: Date;
+  phoneNumber?: string | null;
+  gender?: string | null;
+  dayOfBirth?: number | null;
+  monthOfBirth?: number | null;
+  yearOfBirth?: number | null;
 }

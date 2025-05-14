@@ -8,7 +8,8 @@ import { ProductModule } from './modules/product/product.module';
 import { CartModule } from './modules/cart/cart.module';
 import { CartItemModule } from './modules/cart/cart-item/cart-item.module';
 import { ViettelPostModule } from './modules/viettel-post/viettel-post.module';
-import { AddressModule } from './modules/cart/address.module';
+import { AddressModule as AddressFeatureModule } from './modules/address/address.module';
+import { ShippingAddressModule } from './modules/address/shipping-address/shipping-address.module';
 
 @Module({
   imports: [
@@ -34,7 +35,8 @@ import { AddressModule } from './modules/cart/address.module';
     CartModule,
     CartItemModule,
     ViettelPostModule,
-    AddressModule,
+    AddressFeatureModule,
+    ShippingAddressModule,
   ],
 })
 export class AppModule {}

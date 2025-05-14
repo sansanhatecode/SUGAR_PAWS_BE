@@ -8,6 +8,7 @@ import {
   Param,
   ParseIntPipe,
   Post,
+  Patch,
   Req,
   Res,
   UseGuards,
@@ -18,6 +19,7 @@ import { User } from './user.model';
 import { GetUsersResponseDto } from './dto/get-users-response.dto';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 import { AuthenticatedRequest } from 'src/common/request.types';
+import { UpdateProfileDto } from './dto/update-profile.dto';
 
 @UseGuards(JwtAuthGuard)
 @Controller('users')
@@ -99,6 +101,45 @@ export class UserController {
         status: 'Ok!',
         message: 'User information retrieved successfully',
         data: userInfo,
+      });
+    } catch (error: unknown) {
+      console.error(error);
+      const status =
+        error instanceof HttpException
+          ? error.getStatus()
+          : HttpStatus.INTERNAL_SERVER_ERROR;
+      return response.status(status).json({
+        status: 'Error',
+        message:
+          error instanceof HttpException
+            ? error.message
+            : 'Internal Server Error!',
+      });
+    }
+  }
+
+  @Patch('me')
+  async updateProfile(
+    @Req() request: AuthenticatedRequest,
+    @Body() updateProfileDto: UpdateProfileDto,
+    @Res() response: Response,
+  ): Promise<Response> {
+    try {
+      const userId = request?.user?.userId;
+      if (!userId) {
+        throw new HttpException(
+          'User not authenticated',
+          HttpStatus.UNAUTHORIZED,
+        );
+      }
+      const updatedUser = await this.userService.updateProfile(
+        Number(userId),
+        updateProfileDto,
+      );
+      return response.status(HttpStatus.OK).json({
+        status: 'Ok!',
+        message: 'User profile updated successfully',
+        data: updatedUser,
       });
     } catch (error: unknown) {
       console.error(error);

@@ -10,6 +10,7 @@ import * as bcrypt from 'bcrypt';
 import { GetUsersResponseDto } from './dto/get-users-response.dto';
 import { UserRole } from '@prisma/client';
 import { PrismaService } from 'src/prisma.service';
+import { UpdateProfileDto } from './dto/update-profile.dto';
 
 @Injectable()
 export class UserService {
@@ -59,6 +60,11 @@ export class UserService {
           email: true,
           role: true,
           isVerified: true,
+          phoneNumber: true,
+          gender: true,
+          dayOfBirth: true,
+          monthOfBirth: true,
+          yearOfBirth: true,
         },
       });
     } catch (error: unknown) {
@@ -129,6 +135,26 @@ export class UserService {
     }
   }
 
+  async updateProfile(
+    userId: number,
+    updateProfileDto: UpdateProfileDto,
+  ): Promise<User> {
+    try {
+      return await this.prisma.user.update({
+        where: { id: userId },
+        data: updateProfileDto,
+      });
+    } catch (error: unknown) {
+      if (
+        error instanceof PrismaClientKnownRequestError &&
+        error.code === 'P2025'
+      ) {
+        throw new NotFoundException('User not found');
+      }
+      throw new InternalServerErrorException('Something went wrong');
+    }
+  }
+
   async findById(id: number) {
     try {
       const user = await this.prisma.user.findUnique({
@@ -139,6 +165,12 @@ export class UserService {
           email: true,
           name: true,
           role: true,
+          isVerified: true,
+          phoneNumber: true,
+          gender: true,
+          dayOfBirth: true,
+          monthOfBirth: true,
+          yearOfBirth: true,
         },
       });
 

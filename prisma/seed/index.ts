@@ -4,9 +4,6 @@ import { seedCategories } from './categorySeeder';
 import { seedProducts } from './productSeeder';
 import { seedCart } from './cartSeeder';
 import { seedAddressCodes } from './addressCodeSeeder';
-// import { seedProductDetails } from './productDetailSeeder';
-// import { seedProductCategories } from './productCategorySeeder';
-// import { seedProductImages } from './productImageSeeder';
 
 const prisma = new PrismaClient();
 
@@ -31,7 +28,6 @@ async function main() {
     return;
   }
 
-  // Regular full seeding
   console.log('🗑️ Deleting existing data...');
 
   await prisma.$transaction([

@@ -27,4 +27,21 @@ export class CreateUserDto {
   @IsString()
   @IsNotEmpty()
   role: string;
+
+  @IsString()
+  @IsOptional()
+  phoneNumber?: string;
+
+  @IsString()
+  @IsOptional()
+  gender?: string;
+
+  @IsOptional()
+  dayOfBirth?: number;
+
+  @IsOptional()
+  monthOfBirth?: number;
+
+  @IsOptional()
+  yearOfBirth?: number;
 }

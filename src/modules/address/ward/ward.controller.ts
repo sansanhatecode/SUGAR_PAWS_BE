@@ -4,10 +4,12 @@ import {
   Param,
   ParseIntPipe,
   NotFoundException,
+  HttpStatus,
 } from '@nestjs/common';
 import { WardService } from './ward.service';
 import { ApiTags, ApiOperation, ApiResponse, ApiParam } from '@nestjs/swagger';
 import { Ward } from './ward.model';
+import { ApiResponse as CustomApiResponse } from 'src/common/response.types';
 
 @ApiTags('wards')
 @Controller('wards')
@@ -20,8 +22,13 @@ export class WardController {
     status: 200,
     description: 'Returns all wards',
   })
-  async findAll(): Promise<Ward[]> {
-    return this.wardService.findAll();
+  async findAll(): Promise<CustomApiResponse<Ward[]>> {
+    const wards = await this.wardService.findAll();
+    return {
+      statusCode: HttpStatus.OK,
+      message: 'Successfully fetched all wards',
+      data: wards,
+    };
   }
 
   @Get('district/:districtCode')
@@ -37,8 +44,13 @@ export class WardController {
   })
   async findByDistrictCode(
     @Param('districtCode', ParseIntPipe) districtCode: number,
-  ): Promise<Ward[]> {
-    return this.wardService.findByDistrictCode(districtCode);
+  ): Promise<CustomApiResponse<Ward[]>> {
+    const wards = await this.wardService.findByDistrictCode(districtCode);
+    return {
+      statusCode: HttpStatus.OK,
+      message: 'Successfully fetched wards by district code',
+      data: wards,
+    };
   }
 
   @Get(':id')
@@ -49,11 +61,17 @@ export class WardController {
     description: 'Returns the ward with the specified code',
   })
   @ApiResponse({ status: 404, description: 'Ward not found' })
-  async findOne(@Param('id', ParseIntPipe) id: number): Promise<Ward> {
+  async findOne(
+    @Param('id', ParseIntPipe) id: number,
+  ): Promise<CustomApiResponse<Ward>> {
     const ward = await this.wardService.findOne(id);
     if (!ward) {
       throw new NotFoundException(`Ward with code ${id} not found`);
     }
-    return ward;
+    return {
+      statusCode: HttpStatus.OK,
+      message: 'Successfully fetched ward',
+      data: ward,
+    };
   }
 }

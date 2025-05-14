@@ -6,6 +6,7 @@ import {
   InternalServerErrorException,
   NotFoundException,
   UnauthorizedException,
+  HttpStatus,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
@@ -14,6 +15,7 @@ import { MailService } from '../modules/mail/mail.service';
 import { Cache } from 'cache-manager';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import { UserService } from 'src/modules/user/user.service';
+import { ApiResponse } from '../common/response.types';
 
 @Injectable()
 export class AuthService {
@@ -39,7 +41,9 @@ export class AuthService {
     console.log('Set cache key:', cacheKey, 'with code:', code);
   }
 
-  async signup(signupDto: SignupDto): Promise<{ message: string }> {
+  async signup(
+    signupDto: SignupDto,
+  ): Promise<ApiResponse<{ accessToken: string }>> {
     try {
       const newUser = await this.userService.create(signupDto);
       if (!newUser) {
@@ -48,8 +52,17 @@ export class AuthService {
       const code = this.generateVerificationCode();
       await this.mailService.sendVerificationEmail(signupDto.email, code);
       await this.setVerificationCodeToCache(signupDto.email, code);
+      // Sinh JWT token cho user mới
+      const payload = {
+        username: newUser.username,
+        sub: newUser.id,
+        role: newUser.role,
+      };
+      const accessToken = this.jwtService.sign(payload);
       return {
+        statusCode: HttpStatus.CREATED,
         message: `Verification code sent successfully to ${signupDto.email}`,
+        data: { accessToken },
       };
     } catch (error: unknown) {
       console.error(error);

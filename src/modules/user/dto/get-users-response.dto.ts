@@ -18,4 +18,19 @@ export class GetUsersResponseDto {
 
   @ApiProperty()
   isVerified: boolean;
+
+  @ApiProperty({ nullable: true })
+  phoneNumber: string | null;
+
+  @ApiProperty({ nullable: true })
+  gender: string | null;
+
+  @ApiProperty({ nullable: true })
+  dayOfBirth: number | null;
+
+  @ApiProperty({ nullable: true })
+  monthOfBirth: number | null;
+
+  @ApiProperty({ nullable: true })
+  yearOfBirth: number | null;
 }

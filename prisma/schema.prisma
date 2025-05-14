@@ -41,6 +41,11 @@ model User {
   cart          Cart?
   orders        Order[]
   shippingAddresses ShippingAddress[]
+  phoneNumber     String?   @db.VarChar(15)
+  gender         String?   @db.VarChar(10)
+  dayOfBirth     Int?
+  monthOfBirth   Int?
+  yearOfBirth    Int?
 }
 
 model Category {
@@ -162,7 +167,6 @@ model ShippingAddress {
   fullName        String
   phoneNumber     String   @db.VarChar(15)
   homeNumber      String
-  streetName      Int
   wardCode        Int
   isDefault       Boolean  @default(false)
   createdAt       DateTime @default(now())

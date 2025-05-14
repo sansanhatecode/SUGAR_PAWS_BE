@@ -174,6 +174,24 @@ export class CartItemService {
         throw new NotFoundException('CartItem not found');
       }
 
+      // Nếu không truyền newProductDetailId, chỉ update quantity
+      if (!dto.newProductDetailId) {
+        // Kiểm tra tồn kho
+        if (dto.quantity > cartItem.productDetail.stock) {
+          throw new BadRequestException('Quantity exceeds available stock');
+        }
+        const updatedCartItem = await prisma.cartItem.update({
+          where: { id: cartItemId },
+          data: { quantity: dto.quantity },
+        });
+        return {
+          statusCode: HttpStatus.OK,
+          message: 'CartItem quantity updated successfully',
+          data: updatedCartItem,
+        };
+      }
+
+      // Nếu có newProductDetailId, thực hiện đổi product detail
       const productDetail = await prisma.productDetail.findUnique({
         where: { id: dto.newProductDetailId },
       });
