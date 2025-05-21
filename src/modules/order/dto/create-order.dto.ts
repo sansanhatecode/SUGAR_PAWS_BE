@@ -5,11 +5,10 @@ import {
   IsEnum,
   IsInt,
   IsNotEmpty,
-  IsNumber,
   IsOptional,
-  IsString,
   Min,
   ValidateNested,
+  IsString,
 } from 'class-validator';
 
 class CreateOrderItemDto {
@@ -29,16 +28,8 @@ export class CreateOrderDto {
   shippingAddressId: number;
 
   @IsString()
-  @IsOptional()
-  paymentMethod?: string;
-
-  @IsNumber()
-  @IsOptional()
-  shippingFee?: number;
-
-  @IsNumber()
   @IsNotEmpty()
-  totalAmount: number;
+  paymentMethod: string; // Bắt buộc: 'COD' hoặc 'ONLINE'
 
   @IsString()
   @IsOptional()

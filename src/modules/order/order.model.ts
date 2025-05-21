@@ -10,11 +10,11 @@ export class Order {
   updatedAt: Date;
   paidAt?: Date;
   deliveredAt?: Date;
-  paymentMethod?: string;
   shippingFee?: number;
   totalAmount: number;
   trackingCode?: string;
   status: OrderStatus;
+  payId?: number; // Bỏ paymentMethod, thay bằng liên kết với payment
 
   shippingAddress?: ShippingAddress;
   orderItems?: OrderItem[];
