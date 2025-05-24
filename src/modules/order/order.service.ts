@@ -13,7 +13,9 @@ export class OrderService {
   ) {}
 
   // Calculate shipping fee based on the shipping address
-  async calculateShippingFee(shippingAddressId: number): Promise<number> {
+  async calculateShippingFee(
+    shippingAddressId: number,
+  ): Promise<ApiResponse<{ shippingFee: number }>> {
     try {
       // Get the shipping address
       const shippingAddress = await this.prisma.shippingAddress.findUnique({
@@ -79,10 +81,25 @@ export class OrderService {
         }
       }
 
-      return baseFee;
+      return {
+        statusCode: 200,
+        message: 'Shipping fee calculated successfully',
+        data: { shippingFee: baseFee },
+      };
     } catch (error) {
       console.error('Error calculating shipping fee:', error);
-      return 30000; // Default shipping fee in case of error
+      return {
+        statusCode: 500,
+        message: 'Error calculating shipping fee',
+        error:
+          error &&
+          typeof error === 'object' &&
+          'message' in error &&
+          typeof (error as { message?: unknown }).message === 'string'
+            ? (error as { message: string }).message
+            : 'Unknown error',
+        data: { shippingFee: 30000 }, // Default shipping fee in case of error
+      };
     }
   }
 
@@ -111,7 +128,10 @@ export class OrderService {
     }
 
     // Calculate shipping fee if not provided
-    const shippingFee = await this.calculateShippingFee(dto.shippingAddressId);
+    const shippingFeeResponse = await this.calculateShippingFee(
+      dto.shippingAddressId,
+    );
+    const shippingFee = shippingFeeResponse.data?.shippingFee ?? 0;
 
     // Tính tổng tiền hàng (cần truy vấn giá thực tế, ở đây chỉ demo = 0)
     const totalProduct = 0;
@@ -240,14 +260,60 @@ export class OrderService {
     const order = await this.prisma.order.findUnique({
       where: { id: orderId },
       include: {
-        orderItems: { include: { productDetail: true } },
+        orderItems: {
+          include: {
+            productDetail: {
+              include: {
+                image: true,
+                product: {
+                  select: {
+                    id: true,
+                    name: true,
+                    displayImage: true,
+                    vendor: true,
+                  },
+                },
+              },
+            },
+          },
+        },
+        shippingAddress: true,
         payment: true,
       },
     });
+    if (!order) {
+      return {
+        statusCode: 404,
+        message: 'Order not found',
+        data: null,
+      };
+    }
+    // Tổng tiền hàng = tổng (giá * số lượng) của từng orderItem
+    const totalProduct = order.orderItems.reduce((sum, item) => {
+      const price =
+        item.productDetail && typeof item.productDetail.price === 'number'
+          ? item.productDetail.price
+          : 0;
+      return sum + price * item.quantity;
+    }, 0);
+    const shippingFee = order.shippingFee ?? 0;
+    // Format lại orderItems để trả về imageUrl, product name, displayImage
+    const formattedOrderItems = order.orderItems.map((item) => ({
+      ...item,
+      productDetail: {
+        ...item.productDetail,
+        productName: item.productDetail.product?.name || null,
+        productDisplayImage: item.productDetail.product?.displayImage || null,
+      },
+    }));
     return {
       statusCode: 200,
       message: 'Order fetched successfully',
-      data: order as unknown as OrderResponseDto,
+      data: {
+        ...order,
+        totalAmount: totalProduct + shippingFee,
+        orderItems: formattedOrderItems,
+      } as unknown as OrderResponseDto,
     };
   }
 }

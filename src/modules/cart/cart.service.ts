@@ -30,7 +30,6 @@ export class CartService {
       throw new NotFoundException('Cart not found for this user');
     }
 
-    // Process each cart item to add product names
     const cartItemsWithProductNames = await Promise.all(
       cart.cartItems.map(async (item) => {
         // Get product name using ProductService
@@ -38,6 +37,16 @@ export class CartService {
           await this.productService.getProductNameByProductDetailId(
             item.productDetailId,
           );
+
+        // Get displayImage using Prisma (fetch product by productId)
+        let displayImage: string[] | undefined = undefined;
+        if (item.productDetail?.productId) {
+          const product = await prisma.product.findUnique({
+            where: { id: item.productDetail.productId },
+            select: { displayImage: true },
+          });
+          displayImage = product?.displayImage;
+        }
 
         return {
           ...item,
@@ -49,10 +58,17 @@ export class CartService {
             color: item.productDetail.color ?? undefined,
             imageId: item.productDetail.imageId ?? undefined,
             image: item.productDetail.image ?? undefined,
+            displayImage,
           },
         };
       }),
     );
+
+    cartItemsWithProductNames.sort((a, b) => {
+      const dateA = new Date(a.createdAt).getTime();
+      const dateB = new Date(b.createdAt).getTime();
+      return dateB - dateA;
+    });
 
     const formatedCart: Cart = {
       ...cart,

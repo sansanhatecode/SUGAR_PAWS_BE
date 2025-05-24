@@ -24,9 +24,15 @@ export class ProductController {
   constructor(private readonly productService: ProductService) {}
 
   @Get()
-  async findAll(): Promise<ApiResponse<any>> {
+  async findAll(
+    @Query('page') page?: number,
+    @Query('itemPerPage') itemPerPage?: number,
+  ): Promise<ApiResponse<any>> {
     try {
-      return await this.productService.findAll();
+      return await this.productService.findAll(
+        page ? Number(page) : 1,
+        itemPerPage ? Number(itemPerPage) : 40,
+      );
     } catch (error: unknown) {
       console.error('[ProductController] FindAll error:', error);
       if (error instanceof HttpException) {
@@ -45,6 +51,8 @@ export class ProductController {
     @Query('avaiability') avaiability?: number,
     @Query('minPrice') minPrice?: number,
     @Query('maxPrice') maxPrice?: number,
+    @Query('page') page?: number,
+    @Query('itemPerPage') itemPerPage?: number,
   ): Promise<ApiResponse<any>> {
     try {
       if (!categoryName) {
@@ -61,6 +69,8 @@ export class ProductController {
         avaiability,
         sortBy,
         priceRange,
+        page ? Number(page) : 1,
+        itemPerPage ? Number(itemPerPage) : 40,
       );
     } catch (error: unknown) {
       console.error('[ProductController] FindByCategory error:', error);

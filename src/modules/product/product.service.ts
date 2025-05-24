@@ -18,13 +18,22 @@ export class ProductService {
     private productDetailService: ProductDetailService,
   ) {}
 
-  async findAll(): Promise<ApiResponse<Product[]>> {
+  async findAll(
+    page = 1,
+    itemPerPage = 40,
+  ): Promise<ApiResponse<{ products: Product[]; totalProducts: number }>> {
     try {
-      const products = await this.prisma.product.findMany({
-        include: {
-          productDetails: true,
-        },
-      });
+      const skip = (page - 1) * itemPerPage;
+      const [products, totalProducts] = await Promise.all([
+        this.prisma.product.findMany({
+          skip,
+          take: itemPerPage,
+          include: {
+            productDetails: true,
+          },
+        }),
+        this.prisma.product.count(),
+      ]);
 
       const formattedProducts = products.map((product) => {
         const productDetails = product.productDetails;
@@ -60,7 +69,10 @@ export class ProductService {
       return {
         statusCode: HttpStatus.OK,
         message: 'Products retrieved successfully',
-        data: formattedProducts,
+        data: {
+          products: formattedProducts,
+          totalProducts,
+        },
       };
     } catch (error) {
       console.error(error);
@@ -141,7 +153,9 @@ export class ProductService {
     availability?: number,
     sortBy?: 'priceAsc' | 'priceDesc' | 'bestSelling',
     priceRange?: { min: number; max: number },
-  ): Promise<ApiResponse<Product[]>> {
+    page = 1,
+    itemPerPage = 40,
+  ): Promise<ApiResponse<{ products: Product[]; totalProducts: number }>> {
     try {
       const formattedName = categoryName.toLowerCase().replace(/-/g, ' ');
       const category = await this.prisma.category.findUnique({
@@ -303,10 +317,20 @@ export class ProductService {
           );
         }
       }
+
+      const totalProducts = filteredProducts.length;
+      const paginatedProducts = filteredProducts.slice(
+        (page - 1) * itemPerPage,
+        page * itemPerPage,
+      );
+
       return {
         statusCode: HttpStatus.OK,
         message: 'Products by category retrieved successfully',
-        data: filteredProducts,
+        data: {
+          products: paginatedProducts,
+          totalProducts,
+        },
       };
     } catch (error) {
       console.error(error);

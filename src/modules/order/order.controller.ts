@@ -42,8 +42,15 @@ export class OrderController {
   @Get('shipping-fee/:addressId')
   async calculateShippingFee(
     @Param('addressId', ParseIntPipe) addressId: number,
-  ): Promise<{ shippingFee: number }> {
-    const shippingFee = await this.orderService.calculateShippingFee(addressId);
-    return { shippingFee };
+  ): Promise<ApiResponse<{ shippingFee: number }>> {
+    return await this.orderService.calculateShippingFee(addressId);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Get(':orderId')
+  async getOrderDetail(
+    @Param('orderId', ParseIntPipe) orderId: number,
+  ): Promise<ApiResponse<OrderResponseDto | null>> {
+    return await this.orderService.getOrderById(orderId);
   }
 }
