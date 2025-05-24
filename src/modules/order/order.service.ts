@@ -4,6 +4,7 @@ import { CreateOrderDto } from './dto/create-order.dto';
 import { OrderResponseDto } from './dto/order-response.dto';
 import { PaymentService } from '../payment/payment.service';
 import { ApiResponse } from '../../common/response.types';
+import { UpdateOrderDto } from './dto/update-order.dto';
 
 @Injectable()
 export class OrderService {
@@ -315,5 +316,89 @@ export class OrderService {
         orderItems: formattedOrderItems,
       } as unknown as OrderResponseDto,
     };
+  }
+
+  async updateOrder(
+    id: number,
+    dto: UpdateOrderDto,
+  ): Promise<ApiResponse<OrderResponseDto>> {
+    try {
+      // Chỉ cập nhật các trường hợp hợp lệ theo Prisma schema
+      const order = await this.prisma.order.update({
+        where: { id },
+        data: {
+          userId: dto.userId,
+          shippingAddressId: dto.shippingAddressId,
+          paidAt: dto.paidAt,
+          deliveredAt: dto.deliveredAt,
+          shippingFee: dto.shippingFee,
+          trackingCode: dto.trackingCode,
+          status: dto.status,
+        },
+        include: {
+          orderItems: {
+            include: {
+              productDetail: {
+                include: {
+                  image: true,
+                  product: {
+                    select: {
+                      id: true,
+                      name: true,
+                      displayImage: true,
+                      vendor: true,
+                    },
+                  },
+                },
+              },
+            },
+          },
+          shippingAddress: true,
+          payment: true,
+        },
+      });
+      // Tính lại tổng tiền hàng
+      const totalProduct =
+        order.orderItems && Array.isArray(order.orderItems)
+          ? order.orderItems.reduce((sum, item) => {
+              const price =
+                item.productDetail &&
+                typeof item.productDetail.price === 'number'
+                  ? item.productDetail.price
+                  : 0;
+              return sum + price * item.quantity;
+            }, 0)
+          : 0;
+      const shippingFee = order.shippingFee ?? 0;
+      const formattedOrderItems =
+        order.orderItems && Array.isArray(order.orderItems)
+          ? order.orderItems.map((item) => ({
+              ...item,
+              productDetail: {
+                ...item.productDetail,
+                productName: item.productDetail.product?.name || null,
+                productDisplayImage:
+                  item.productDetail.product?.displayImage || null,
+              },
+            }))
+          : [];
+      return {
+        statusCode: 200,
+        message: 'Order updated successfully',
+        data: {
+          ...order,
+          totalAmount: totalProduct + shippingFee,
+          orderItems: formattedOrderItems,
+        } as unknown as OrderResponseDto,
+      };
+    } catch (error) {
+      console.error(error);
+      return {
+        statusCode: 500,
+        message: 'Failed to update order',
+        error: error instanceof Error ? error.message : 'Unknown error',
+        data: undefined,
+      };
+    }
   }
 }

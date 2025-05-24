@@ -2,6 +2,7 @@ import {
   Controller,
   Get,
   Post,
+  Patch,
   Body,
   Req,
   UseGuards,
@@ -11,6 +12,7 @@ import {
 import { OrderService } from './order.service';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { OrderResponseDto } from './dto/order-response.dto';
+import { UpdateOrderDto } from './dto/update-order.dto';
 import { JwtAuthGuard } from '../../auth/jwt-auth.guard';
 import { RequestWithUser } from '../address/shipping-address/interfaces/request-with-user.interface';
 import type { ApiResponse } from '../../common/response.types';
@@ -52,5 +54,14 @@ export class OrderController {
     @Param('orderId', ParseIntPipe) orderId: number,
   ): Promise<ApiResponse<OrderResponseDto | null>> {
     return await this.orderService.getOrderById(orderId);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Patch(':id')
+  async updateOrder(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() updateOrderDto: UpdateOrderDto,
+  ): Promise<ApiResponse<OrderResponseDto>> {
+    return await this.orderService.updateOrder(id, updateOrderDto);
   }
 }

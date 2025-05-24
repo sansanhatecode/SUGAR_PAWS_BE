@@ -30,6 +30,11 @@ export class ProductService {
           take: itemPerPage,
           include: {
             productDetails: true,
+            categories: {
+              include: {
+                category: true,
+              },
+            },
           },
         }),
         this.prisma.product.count(),
@@ -37,7 +42,8 @@ export class ProductService {
 
       const formattedProducts = products.map((product) => {
         const productDetails = product.productDetails;
-
+        // Lấy category từ product.categories
+        const categories = product.categories?.map((pc) => pc.category) || [];
         return {
           ...product,
           totalStock: productDetails.reduce(
@@ -63,6 +69,7 @@ export class ProductService {
             size: detail.size ?? undefined,
             color: detail.color ?? undefined,
           })),
+          categories, // Thêm categories vào kết quả trả về
         };
       });
 
@@ -484,11 +491,29 @@ export class ProductService {
 
   async create(data: CreateProductDto): Promise<ApiResponse<any>> {
     try {
-      const product = await this.prisma.product.create({ data });
+      // Extract categories from data
+      const { categories, ...productData } = data;
+      // Create product
+      const product = await this.prisma.product.create({ data: productData });
+      // Create ProductCategory relations
+      if (categories && categories.length > 0) {
+        await Promise.all(
+          categories.map((categoryId) =>
+            this.prisma.productCategory.create({
+              data: { productId: product.id, categoryId },
+            }),
+          ),
+        );
+      }
+      // Fetch product with categories for response
+      const productWithCategories = await this.prisma.product.findUnique({
+        where: { id: product.id },
+        include: { categories: { include: { category: true } } },
+      });
       return {
         statusCode: HttpStatus.CREATED,
         message: 'Product created successfully',
-        data: product,
+        data: productWithCategories,
       };
     } catch (error) {
       console.error(error);
@@ -498,14 +523,42 @@ export class ProductService {
 
   async update(id: number, data: UpdateProductDto): Promise<ApiResponse<any>> {
     try {
-      const product = await this.prisma.product.update({
+      // Extract categories from data
+      const { categories, ...productData } = data;
+      // Nếu có displayImage, chỉ giữ lại các URL hợp lệ (bắt đầu bằng http hoặc https)
+      if (productData.displayImage) {
+        productData.displayImage = productData.displayImage.filter(
+          (url: string) => {
+            return typeof url === 'string' && /^(http|https):\/\//.test(url);
+          },
+        );
+      }
+      // Update product
+      await this.prisma.product.update({
         where: { id },
-        data,
+        data: productData,
+      });
+      if (categories) {
+        await this.prisma.productCategory.deleteMany({
+          where: { productId: id },
+        });
+        await Promise.all(
+          categories.map((categoryId) =>
+            this.prisma.productCategory.create({
+              data: { productId: id, categoryId },
+            }),
+          ),
+        );
+      }
+      // Fetch product with categories for response
+      const productWithCategories = await this.prisma.product.findUnique({
+        where: { id },
+        include: { categories: { include: { category: true } } },
       });
       return {
         statusCode: HttpStatus.OK,
         message: 'Product updated successfully',
-        data: product,
+        data: productWithCategories,
       };
     } catch (error) {
       console.error(error);

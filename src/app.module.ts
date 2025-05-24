@@ -11,6 +11,7 @@ import { ViettelPostModule } from './modules/viettel-post/viettel-post.module';
 import { AddressModule as AddressFeatureModule } from './modules/address/address.module';
 import { ShippingAddressModule } from './modules/address/shipping-address/shipping-address.module';
 import { OrderModule } from './modules/order/order.module';
+import { CloudinaryModule } from './modules/cloudinary';
 
 @Module({
   imports: [
@@ -39,6 +40,7 @@ import { OrderModule } from './modules/order/order.module';
     AddressFeatureModule,
     ShippingAddressModule,
     OrderModule,
+    CloudinaryModule,
   ],
 })
 export class AppModule {}
