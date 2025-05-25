@@ -1,4 +1,4 @@
-import { IsArray, IsNotEmpty, IsString } from 'class-validator';
+import { IsArray, IsNotEmpty, IsString, IsOptional } from 'class-validator';
 
 export class CreateProductDto {
   @IsString()
@@ -10,7 +10,8 @@ export class CreateProductDto {
   description: string;
 
   @IsArray()
-  displayImage: string[];
+  @IsOptional()
+  displayImage?: string[];
 
   @IsArray()
   tags: string[];

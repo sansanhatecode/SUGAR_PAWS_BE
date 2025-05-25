@@ -613,4 +613,88 @@ export class ProductService {
       throw new InternalServerErrorException('Failed to fetch product name');
     }
   }
+
+  async findRelatedProducts(
+    productId: number,
+  ): Promise<ApiResponse<Product[]>> {
+    try {
+      // Lấy sản phẩm gốc và tags
+      const product = await this.prisma.product.findUnique({
+        where: { id: productId },
+        select: { tags: true },
+      });
+      if (!product) {
+        throw new NotFoundException(`Product with ID ${productId} not found`);
+      }
+      const tags = product.tags || [];
+      if (tags.length === 0) {
+        return {
+          statusCode: HttpStatus.OK,
+          message: 'No related products found',
+          data: [],
+        };
+      }
+      // Tìm các sản phẩm khác có ít nhất 1 tag giống, loại trừ sản phẩm gốc
+      const relatedProducts = await this.prisma.product.findMany({
+        where: {
+          id: { not: productId },
+          tags: {
+            hasSome: tags,
+          },
+        },
+        include: {
+          productDetails: true,
+        },
+      });
+      // Sắp xếp theo số lượng tag trùng giảm dần, lấy tối đa 5 sản phẩm
+      const sortedRelated = relatedProducts
+        .map((p) => ({
+          product: p,
+          sameTagCount: p.tags.filter((tag) => tags.includes(tag)).length,
+        }))
+        .sort((a, b) => b.sameTagCount - a.sameTagCount)
+        .slice(0, 5)
+        .map((item) => {
+          const productDetails = item.product.productDetails;
+          return {
+            ...item.product,
+            totalStock: productDetails.reduce(
+              (sum, detail) => sum + (detail.stock || 0),
+              0,
+            ),
+            totalSales: productDetails.reduce(
+              (sum, detail) =>
+                sum + (Number.isFinite(detail.sale) ? Number(detail.sale) : 0),
+              0,
+            ),
+            maxPrice: productDetails.length
+              ? Math.max(...productDetails.map((detail) => detail.price || 0))
+              : 0,
+            minPrice: productDetails.length
+              ? Math.min(...productDetails.map((detail) => detail.price || 0))
+              : 0,
+            colors: [
+              ...new Set(productDetails.map((detail) => detail.color)),
+            ].filter(
+              (color): color is string => color !== null && color !== undefined,
+            ),
+            productDetails: productDetails.map((detail) => ({
+              ...detail,
+              size: detail.size ?? undefined,
+              color: detail.color ?? undefined,
+            })),
+          };
+        });
+      return {
+        statusCode: HttpStatus.OK,
+        message: 'Related products retrieved successfully',
+        data: sortedRelated,
+      };
+    } catch (error) {
+      console.error(error);
+      throw new InternalServerErrorException(
+        'Failed to fetch related products',
+      );
+    }
+  }
 }
