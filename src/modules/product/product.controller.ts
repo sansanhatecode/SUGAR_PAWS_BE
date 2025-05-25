@@ -12,10 +12,14 @@ import {
   Query,
   BadRequestException,
   NotFoundException,
+  UseInterceptors,
+  UploadedFiles,
 } from '@nestjs/common';
+import { FilesInterceptor } from '@nestjs/platform-express';
 import { ProductService } from './product.service';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
+import { DeleteManyProductsDto } from './dto/delete-many-products.dto';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 import { ApiResponse } from 'src/common/response.types';
 
@@ -140,11 +144,19 @@ export class ProductController {
 
   @UseGuards(JwtAuthGuard)
   @Post()
+  @UseInterceptors(FilesInterceptor('images', 20)) // Maximum 10 files
   async create(
     @Body() createProductDto: CreateProductDto,
+    @UploadedFiles() files: Express.Multer.File[],
   ): Promise<ApiResponse<any>> {
     try {
-      return await this.productService.create(createProductDto);
+      // Ensure categories are properly converted to numbers
+      if (createProductDto.categories) {
+        createProductDto.categories = createProductDto.categories.map((id) =>
+          typeof id === 'string' ? parseInt(id, 10) : id,
+        );
+      }
+      return await this.productService.create(createProductDto, files);
     } catch (error: unknown) {
       console.error('[ProductController] Create error:', error);
       if (error instanceof HttpException) {
@@ -156,12 +168,24 @@ export class ProductController {
 
   @UseGuards(JwtAuthGuard)
   @Patch(':id')
+  @UseInterceptors(FilesInterceptor('images', 20)) // Maximum 10 files
   async update(
     @Param('id') id: string,
     @Body() updateProductDto: UpdateProductDto,
+    @UploadedFiles() files?: Express.Multer.File[],
   ): Promise<ApiResponse<any>> {
     try {
-      return await this.productService.update(Number(id), updateProductDto);
+      // Ensure categories are properly converted to numbers
+      if (updateProductDto.categories) {
+        updateProductDto.categories = updateProductDto.categories.map((id) =>
+          typeof id === 'string' ? parseInt(id, 10) : id,
+        );
+      }
+      return await this.productService.update(
+        Number(id),
+        updateProductDto,
+        files,
+      );
     } catch (error: unknown) {
       console.error('[ProductController] Update error:', error);
       if (error instanceof HttpException) {
@@ -182,6 +206,22 @@ export class ProductController {
         throw error;
       }
       throw new InternalServerErrorException('Failed to delete product');
+    }
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Delete()
+  async deleteMany(
+    @Body() deleteManyDto: DeleteManyProductsDto,
+  ): Promise<ApiResponse<any>> {
+    try {
+      return await this.productService.deleteMany(deleteManyDto.productIds);
+    } catch (error: unknown) {
+      console.error('[ProductController] DeleteMany error:', error);
+      if (error instanceof HttpException) {
+        throw error;
+      }
+      throw new InternalServerErrorException('Failed to delete products');
     }
   }
 }

@@ -42,7 +42,27 @@ export class UpdateOrderDto {
 
   @IsDate()
   @IsOptional()
+  confirmedAt?: Date;
+
+  @IsDate()
+  @IsOptional()
   deliveredAt?: Date;
+
+  @IsDate()
+  @IsOptional()
+  completedAt?: Date;
+
+  @IsDate()
+  @IsOptional()
+  canceledAt?: Date;
+
+  @IsDate()
+  @IsOptional()
+  requestCancelAt?: Date;
+
+  @IsDate()
+  @IsOptional()
+  refundedAt?: Date;
 
   @IsString()
   @IsOptional()

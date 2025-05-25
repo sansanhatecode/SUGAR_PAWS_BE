@@ -9,7 +9,12 @@ export class Order {
   createdAt: Date;
   updatedAt: Date;
   paidAt?: Date;
+  confirmedAt?: Date;
   deliveredAt?: Date;
+  completedAt?: Date;
+  canceledAt?: Date;
+  requestCancelAt?: Date;
+  refundedAt?: Date;
   shippingFee?: number;
   totalAmount: number;
   trackingCode?: string;

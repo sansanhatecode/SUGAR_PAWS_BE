@@ -10,5 +10,5 @@ export class CreateProductDetailDto {
 
   @IsOptional()
   @IsString()
-  imageUrl?: string; // Will be populated from uploaded file
+  imageUrl?: string; // Existing image URL. New file can be uploaded via 'image' field
 }

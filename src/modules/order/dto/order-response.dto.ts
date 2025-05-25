@@ -8,7 +8,12 @@ export class OrderResponseDto implements Order {
   createdAt: Date;
   updatedAt: Date;
   paidAt?: Date;
+  confirmedAt?: Date;
   deliveredAt?: Date;
+  completedAt?: Date;
+  canceledAt?: Date;
+  requestCancelAt?: Date;
+  refundedAt?: Date;
   paymentMethod?: string;
   shippingFee?: number;
   totalAmount: number;
@@ -16,4 +21,5 @@ export class OrderResponseDto implements Order {
   status: any;
   shippingAddress?: any;
   orderItems?: OrderItem[];
+  payId?: number;
 }

@@ -3,6 +3,7 @@ import {
   NotFoundException,
   InternalServerErrorException,
   HttpStatus,
+  BadRequestException,
 } from '@nestjs/common';
 import { PrismaService } from 'src/prisma.service';
 import { CreateProductDto } from './dto/create-product.dto';
@@ -10,12 +11,14 @@ import { UpdateProductDto } from './dto/update-product.dto';
 import { ApiResponse } from 'src/common/response.types';
 import { Product } from './product.model';
 import { ProductDetailService } from '../product-detail/product-detail.service';
+import { CloudinaryService } from '../cloudinary/cloudinary.service';
 
 @Injectable()
 export class ProductService {
   constructor(
     private prisma: PrismaService,
     private productDetailService: ProductDetailService,
+    private cloudinaryService: CloudinaryService,
   ) {}
 
   async findAll(
@@ -489,12 +492,52 @@ export class ProductService {
     }
   }
 
-  async create(data: CreateProductDto): Promise<ApiResponse<any>> {
+  async create(
+    data: CreateProductDto,
+    imageFiles?: Express.Multer.File[],
+  ): Promise<ApiResponse<any>> {
     try {
-      // Extract categories from data
       const { categories, ...productData } = data;
+
+      // Upload images to Cloudinary if provided
+      let displayImageUrls: string[] = [];
+      if (imageFiles && imageFiles.length > 0) {
+        const uploadPromises = imageFiles.map((file) =>
+          this.cloudinaryService.uploadImage(file),
+        );
+        displayImageUrls = await Promise.all(uploadPromises);
+      }
+
+      // Add uploaded image URLs to product data
+      const productWithImages = {
+        ...productData,
+        displayImage: displayImageUrls,
+      };
+
+      // Validate categories
+      if (categories && categories.length > 0) {
+        const validCategories = await this.prisma.category.findMany({
+          where: { id: { in: categories } },
+          select: { id: true },
+        });
+        const validCategoryIds = validCategories.map((category) => category.id);
+
+        // Check for invalid category IDs
+        const invalidCategoryIds = categories.filter(
+          (id) => !validCategoryIds.includes(id),
+        );
+        if (invalidCategoryIds.length > 0) {
+          throw new BadRequestException(
+            `Invalid category IDs: ${invalidCategoryIds.join(', ')}`,
+          );
+        }
+      }
+
       // Create product
-      const product = await this.prisma.product.create({ data: productData });
+      const product = await this.prisma.product.create({
+        data: productWithImages,
+      });
+
       // Create ProductCategory relations
       if (categories && categories.length > 0) {
         await Promise.all(
@@ -505,11 +548,13 @@ export class ProductService {
           ),
         );
       }
+
       // Fetch product with categories for response
       const productWithCategories = await this.prisma.product.findUnique({
         where: { id: product.id },
         include: { categories: { include: { category: true } } },
       });
+
       return {
         statusCode: HttpStatus.CREATED,
         message: 'Product created successfully',
@@ -517,27 +562,73 @@ export class ProductService {
       };
     } catch (error) {
       console.error(error);
+      if (error instanceof BadRequestException) {
+        throw error;
+      }
       throw new InternalServerErrorException('Failed to create product');
     }
   }
 
-  async update(id: number, data: UpdateProductDto): Promise<ApiResponse<any>> {
+  async update(
+    id: number,
+    data: UpdateProductDto,
+    imageFiles?: Express.Multer.File[],
+  ): Promise<ApiResponse<any>> {
     try {
       // Extract categories from data
       const { categories, ...productData } = data;
-      // Nếu có displayImage, chỉ giữ lại các URL hợp lệ (bắt đầu bằng http hoặc https)
+
+      // Get current product to preserve existing images
+      const currentProduct = await this.prisma.product.findUnique({
+        where: { id },
+        select: { displayImage: true },
+      });
+
+      if (!currentProduct) {
+        throw new NotFoundException(`Product with ID ${id} not found`);
+      }
+
+      // Handle image updates
+      let finalDisplayImages: string[] = [];
+
+      // Start with existing images (if preserving them)
       if (productData.displayImage) {
-        productData.displayImage = productData.displayImage.filter(
+        // Filter and keep only valid existing URLs
+        const existingValidImages = productData.displayImage.filter(
           (url: string) => {
             return typeof url === 'string' && /^(http|https):\/\//.test(url);
           },
         );
+        finalDisplayImages = [...existingValidImages];
+      } else {
+        // If no displayImage field provided, preserve all current images
+        finalDisplayImages = [...(currentProduct.displayImage || [])];
       }
+
+      // Upload new images if provided
+      if (imageFiles && imageFiles.length > 0) {
+        const uploadPromises = imageFiles.map((file) =>
+          this.cloudinaryService.uploadImage(file),
+        );
+        const newImageUrls = await Promise.all(uploadPromises);
+        finalDisplayImages = [...finalDisplayImages, ...newImageUrls];
+      }
+
+      // Remove duplicates and limit to reasonable number
+      finalDisplayImages = [...new Set(finalDisplayImages)].slice(0, 10);
+
+      // Update product data with final image array
+      const updateData = {
+        ...productData,
+        displayImage: finalDisplayImages,
+      };
+
       // Update product
       await this.prisma.product.update({
         where: { id },
-        data: productData,
+        data: updateData,
       });
+
       if (categories) {
         await this.prisma.productCategory.deleteMany({
           where: { productId: id },
@@ -550,11 +641,13 @@ export class ProductService {
           ),
         );
       }
+
       // Fetch product with categories for response
       const productWithCategories = await this.prisma.product.findUnique({
         where: { id },
         include: { categories: { include: { category: true } } },
       });
+
       return {
         statusCode: HttpStatus.OK,
         message: 'Product updated successfully',
@@ -562,7 +655,10 @@ export class ProductService {
       };
     } catch (error) {
       console.error(error);
-      throw new NotFoundException(`Product with ID ${id} not found`);
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
+      throw new InternalServerErrorException('Failed to update product');
     }
   }
 
@@ -576,6 +672,53 @@ export class ProductService {
     } catch (error) {
       console.error(error);
       throw new NotFoundException(`Product with ID ${id} not found`);
+    }
+  }
+
+  async deleteMany(productIds: number[]): Promise<ApiResponse<any>> {
+    try {
+      const existingProducts = await this.prisma.product.findMany({
+        where: { id: { in: productIds } },
+        select: { id: true, name: true },
+      });
+
+      const existingProductIds = existingProducts.map((p) => p.id);
+      const nonExistingIds = productIds.filter(
+        (id) => !existingProductIds.includes(id),
+      );
+
+      if (nonExistingIds.length > 0) {
+        throw new NotFoundException(
+          `Products with IDs [${nonExistingIds.join(', ')}] not found`,
+        );
+      }
+
+      const productDetailsCount = await this.prisma.productDetail.count({
+        where: { productId: { in: productIds } },
+      });
+
+      const deleteResult = await this.prisma.product.deleteMany({
+        where: { id: { in: productIds } },
+      });
+
+      return {
+        statusCode: HttpStatus.OK,
+        message: `Successfully deleted ${deleteResult.count} products and ${productDetailsCount} related product details`,
+        data: {
+          deletedProductsCount: deleteResult.count,
+          deletedProductDetailsCount: productDetailsCount,
+          deletedProducts: existingProducts.map((p) => ({
+            id: p.id,
+            name: p.name,
+          })),
+        },
+      };
+    } catch (error) {
+      console.error('Delete many products error:', error);
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
+      throw new InternalServerErrorException('Failed to delete products');
     }
   }
 
@@ -634,7 +777,6 @@ export class ProductService {
           data: [],
         };
       }
-      // Tìm các sản phẩm khác có ít nhất 1 tag giống, loại trừ sản phẩm gốc
       const relatedProducts = await this.prisma.product.findMany({
         where: {
           id: { not: productId },

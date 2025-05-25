@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { OrderStatus } from '@prisma/client';
 import { PrismaService } from '../../prisma.service';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { OrderResponseDto } from './dto/order-response.dto';
@@ -323,14 +324,18 @@ export class OrderService {
     dto: UpdateOrderDto,
   ): Promise<ApiResponse<OrderResponseDto>> {
     try {
-      // Chỉ cập nhật các trường hợp hợp lệ theo Prisma schema
       const order = await this.prisma.order.update({
         where: { id },
         data: {
           userId: dto.userId,
           shippingAddressId: dto.shippingAddressId,
           paidAt: dto.paidAt,
+          confirmedAt: dto.confirmedAt,
           deliveredAt: dto.deliveredAt,
+          completedAt: dto.completedAt,
+          canceledAt: dto.canceledAt,
+          requestCancelAt: dto.requestCancelAt,
+          refundedAt: dto.refundedAt,
           shippingFee: dto.shippingFee,
           trackingCode: dto.trackingCode,
           status: dto.status,
@@ -396,6 +401,136 @@ export class OrderService {
       return {
         statusCode: 500,
         message: 'Failed to update order',
+        error: error instanceof Error ? error.message : 'Unknown error',
+        data: undefined,
+      };
+    }
+  }
+
+  async updateOrderStatus(
+    id: number,
+    newStatus: OrderStatus,
+  ): Promise<ApiResponse<OrderResponseDto>> {
+    try {
+      // First, get the current order to check the current status
+      const currentOrder = await this.prisma.order.findUnique({
+        where: { id },
+      });
+
+      if (!currentOrder) {
+        return {
+          statusCode: 404,
+          message: 'Order not found',
+          data: undefined,
+        };
+      }
+
+      // Define update data type with proper typing
+      interface OrderUpdateData {
+        status: OrderStatus;
+        confirmedAt?: Date;
+        deliveredAt?: Date;
+        completedAt?: Date;
+        canceledAt?: Date;
+        requestCancelAt?: Date;
+        refundedAt?: Date;
+      }
+
+      // Prepare data update object with appropriate timestamps
+      const updateData: OrderUpdateData = {
+        status: newStatus,
+      };
+
+      // Add the corresponding timestamp based on the new status
+      switch (newStatus) {
+        case 'CONFIRMED':
+          updateData.confirmedAt = new Date();
+          break;
+        case 'DELIVERED':
+          updateData.deliveredAt = new Date();
+          break;
+        case 'COMPLETED':
+          updateData.completedAt = new Date();
+          break;
+        case 'CANCELLED':
+          updateData.canceledAt = new Date();
+          break;
+        case 'REQUESTCANCEL':
+          updateData.requestCancelAt = new Date();
+          break;
+        case 'REFUNDED':
+          updateData.refundedAt = new Date();
+          break;
+      }
+
+      // Update the order with new status and timestamp
+      const order = await this.prisma.order.update({
+        where: { id },
+        data: updateData,
+        include: {
+          orderItems: {
+            include: {
+              productDetail: {
+                include: {
+                  image: true,
+                  product: {
+                    select: {
+                      id: true,
+                      name: true,
+                      displayImage: true,
+                      vendor: true,
+                    },
+                  },
+                },
+              },
+            },
+          },
+          shippingAddress: true,
+          payment: true,
+        },
+      });
+
+      // Calculate order total
+      const totalProduct =
+        order.orderItems && Array.isArray(order.orderItems)
+          ? order.orderItems.reduce((sum, item) => {
+              const price =
+                item.productDetail &&
+                typeof item.productDetail.price === 'number'
+                  ? item.productDetail.price
+                  : 0;
+              return sum + price * item.quantity;
+            }, 0)
+          : 0;
+      const shippingFee = order.shippingFee ?? 0;
+
+      const formattedOrderItems =
+        order.orderItems && Array.isArray(order.orderItems)
+          ? order.orderItems.map((item) => ({
+              ...item,
+              productDetail: {
+                ...item.productDetail,
+                productName: item.productDetail.product?.name || null,
+                productDisplayImage:
+                  item.productDetail.product?.displayImage || null,
+              },
+            }))
+          : [];
+
+      return {
+        statusCode: 200,
+        message: `Order status updated to ${newStatus} successfully`,
+        data: {
+          ...order,
+          totalAmount: totalProduct + shippingFee,
+          orderItems: formattedOrderItems,
+        } as unknown as OrderResponseDto,
+      };
+    } catch (error) {
+      console.error('Error updating order status:', error);
+      return {
+        statusCode: 500,
+        message: 'Failed to update order status',
         error: error instanceof Error ? error.message : 'Unknown error',
         data: undefined,
       };

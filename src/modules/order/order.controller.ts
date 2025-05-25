@@ -13,6 +13,7 @@ import { OrderService } from './order.service';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { OrderResponseDto } from './dto/order-response.dto';
 import { UpdateOrderDto } from './dto/update-order.dto';
+import { UpdateOrderStatusDto } from './dto/update-order-status.dto';
 import { JwtAuthGuard } from '../../auth/jwt-auth.guard';
 import { RequestWithUser } from '../address/shipping-address/interfaces/request-with-user.interface';
 import type { ApiResponse } from '../../common/response.types';
@@ -63,5 +64,17 @@ export class OrderController {
     @Body() updateOrderDto: UpdateOrderDto,
   ): Promise<ApiResponse<OrderResponseDto>> {
     return await this.orderService.updateOrder(id, updateOrderDto);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Patch(':id/status')
+  async updateOrderStatus(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() updateOrderStatusDto: UpdateOrderStatusDto,
+  ): Promise<ApiResponse<OrderResponseDto>> {
+    return await this.orderService.updateOrderStatus(
+      id,
+      updateOrderStatusDto.status,
+    );
   }
 }

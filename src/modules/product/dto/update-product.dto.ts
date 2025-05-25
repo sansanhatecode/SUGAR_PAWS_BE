@@ -11,7 +11,7 @@ export class UpdateProductDto {
 
   @IsArray()
   @IsOptional()
-  displayImage?: string[];
+  displayImage?: string[]; // Array of existing image URLs to keep. New files can be uploaded via 'images' field
 
   @IsArray()
   @IsOptional()

@@ -16,9 +16,10 @@ datasource db {
 
 enum OrderStatus {
   PENDING
-  PROCESSING
-  SHIPPED
+  CONFIRMED
   DELIVERED
+  COMPLETED
+  REQUESTCANCEL
   CANCELLED
   REFUNDED
 }
@@ -143,7 +144,12 @@ model Order {
   shippingFee      Int?        
   trackingCode     String?  
   paidAt           DateTime?
+  confirmedAt      DateTime?
   deliveredAt      DateTime?
+  completedAt      DateTime?
+  canceledAt       DateTime?
+  requestCancelAt  DateTime?
+  refundedAt       DateTime?
 
   user             User            @relation(fields: [userId], references: [id])
   payment          Payment?

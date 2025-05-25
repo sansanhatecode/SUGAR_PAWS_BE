@@ -9,4 +9,5 @@ export class ProductDetail {
   discountPercentage: number;
   createdAt: Date;
   updatedAt: Date;
+  imageUrl?: string; // Virtual field for API responses
 }
