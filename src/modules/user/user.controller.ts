@@ -157,6 +157,35 @@ export class UserController {
     }
   }
 
+  @Patch(':id')
+  async updateUser(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() updateData: Partial<User>,
+    @Res() response: Response,
+  ): Promise<Response> {
+    try {
+      const updatedUser = await this.userService.update(id, updateData);
+      return response.status(HttpStatus.OK).json({
+        status: 'Ok!',
+        message: 'User updated successfully!',
+        data: updatedUser,
+      });
+    } catch (error: unknown) {
+      console.error(error);
+      const status =
+        error instanceof HttpException
+          ? error.getStatus()
+          : HttpStatus.INTERNAL_SERVER_ERROR;
+      return response.status(status).json({
+        status: 'Error',
+        message:
+          error instanceof HttpException
+            ? error.message
+            : 'Internal Server Error!',
+      });
+    }
+  }
+
   @Delete(':id')
   async delete(
     @Param('id', ParseIntPipe) id: number,

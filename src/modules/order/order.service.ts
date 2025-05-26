@@ -255,6 +255,74 @@ export class OrderService {
     };
   }
 
+  async getAllOrders(): Promise<ApiResponse<OrderResponseDto[]>> {
+    const orders = await this.prisma.order.findMany({
+      include: {
+        user: {
+          select: {
+            id: true,
+            username: true,
+            name: true,
+            email: true,
+          },
+        },
+        orderItems: {
+          include: {
+            productDetail: {
+              include: {
+                image: true,
+                product: {
+                  select: {
+                    name: true,
+                    displayImage: true,
+                    vendor: true,
+                  },
+                },
+              },
+            },
+          },
+        },
+        shippingAddress: true,
+        payment: true, // Thêm payment
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    const ordersWithTotal = orders.map((order) => {
+      // Tổng tiền hàng = tổng (giá * số lượng) của từng orderItem
+      const totalProduct = order.orderItems.reduce((sum, item) => {
+        const price =
+          item.productDetail && typeof item.productDetail.price === 'number'
+            ? item.productDetail.price
+            : 0;
+        return sum + price * item.quantity;
+      }, 0);
+      const shippingFee = order.shippingFee ?? 0;
+      // Format lại orderItems để trả về imageUrl, product name, displayImage
+      const formattedOrderItems = order.orderItems.map((item) => ({
+        ...item,
+        productDetail: {
+          ...item.productDetail,
+          imageUrl: item.productDetail.image?.url || null,
+          productName: item.productDetail.product?.name || null,
+          productDisplayImage: item.productDetail.product?.displayImage || null,
+        },
+      }));
+      return {
+        ...order,
+        totalAmount: totalProduct + shippingFee,
+        orderItems: formattedOrderItems,
+        userName: order.user?.name || null,
+        phoneNumber: order.shippingAddress?.phoneNumber || null,
+      };
+    });
+    return {
+      statusCode: 200,
+      message: 'All orders fetched successfully',
+      data: ordersWithTotal as unknown as OrderResponseDto[],
+    };
+  }
+
   async getOrderById(
     orderId: number,
   ): Promise<ApiResponse<OrderResponseDto | null>> {
@@ -362,7 +430,6 @@ export class OrderService {
           payment: true,
         },
       });
-      // Tính lại tổng tiền hàng
       const totalProduct =
         order.orderItems && Array.isArray(order.orderItems)
           ? order.orderItems.reduce((sum, item) => {
@@ -412,7 +479,6 @@ export class OrderService {
     newStatus: OrderStatus,
   ): Promise<ApiResponse<OrderResponseDto>> {
     try {
-      // First, get the current order to check the current status
       const currentOrder = await this.prisma.order.findUnique({
         where: { id },
       });
@@ -424,8 +490,6 @@ export class OrderService {
           data: undefined,
         };
       }
-
-      // Define update data type with proper typing
       interface OrderUpdateData {
         status: OrderStatus;
         confirmedAt?: Date;
@@ -435,13 +499,9 @@ export class OrderService {
         requestCancelAt?: Date;
         refundedAt?: Date;
       }
-
-      // Prepare data update object with appropriate timestamps
       const updateData: OrderUpdateData = {
         status: newStatus,
       };
-
-      // Add the corresponding timestamp based on the new status
       switch (newStatus) {
         case 'CONFIRMED':
           updateData.confirmedAt = new Date();
@@ -463,7 +523,6 @@ export class OrderService {
           break;
       }
 
-      // Update the order with new status and timestamp
       const order = await this.prisma.order.update({
         where: { id },
         data: updateData,
@@ -490,7 +549,6 @@ export class OrderService {
         },
       });
 
-      // Calculate order total
       const totalProduct =
         order.orderItems && Array.isArray(order.orderItems)
           ? order.orderItems.reduce((sum, item) => {

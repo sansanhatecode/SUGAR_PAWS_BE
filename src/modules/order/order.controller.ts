@@ -42,6 +42,12 @@ export class OrderController {
   }
 
   @UseGuards(JwtAuthGuard)
+  @Get('all')
+  async getAllOrders(): Promise<ApiResponse<OrderResponseDto[]>> {
+    return await this.orderService.getAllOrders();
+  }
+
+  @UseGuards(JwtAuthGuard)
   @Get('shipping-fee/:addressId')
   async calculateShippingFee(
     @Param('addressId', ParseIntPipe) addressId: number,

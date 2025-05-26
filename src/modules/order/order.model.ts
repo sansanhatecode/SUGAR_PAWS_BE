@@ -5,6 +5,7 @@ import { ShippingAddress } from '../address/shipping-address/shipping-address.mo
 export class Order {
   id: number;
   userId: number;
+  username?: string;
   shippingAddressId: number;
   createdAt: Date;
   updatedAt: Date;
@@ -19,7 +20,7 @@ export class Order {
   totalAmount: number;
   trackingCode?: string;
   status: OrderStatus;
-  payId?: number; // Bỏ paymentMethod, thay bằng liên kết với payment
+  payId?: number;
 
   shippingAddress?: ShippingAddress;
   orderItems?: OrderItem[];
