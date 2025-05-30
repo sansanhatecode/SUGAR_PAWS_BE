@@ -1,0 +1,159 @@
+@startuml
+title Biểu đồ Package - Kiến trúc Hệ thống SUGAR PAWS
+
+' Cấu hình style
+skinparam packageStyle rectangle
+skinparam linetype ortho
+skinparam shadowing false
+skinparam DefaultFontName Arial
+skinparam DefaultFontSize 12
+skinparam ArrowColor #666666
+skinparam BackgroundColor #FFFFFF
+skinparam PackageBackgroundColor #F8F8F8
+skinparam PackageBorderColor #CCCCCC
+
+package "Application Core" as Core {
+  class AppModule
+  class PrismaService
+  class Main
+}
+
+package "Presentation Layer" as Presentation {
+  package "Controllers" as Controllers {
+    class OrderController
+    class ProductController
+    class UserController
+    class AuthController
+    class CartController
+    class PaymentController
+    class CategoryController
+    class DashboardController
+    class ShippingAddressController
+  }
+  
+  package "Guards" as Guards {
+    class JwtAuthGuard
+    class RoleGuard
+  }
+  
+  package "DTOs" as DTOs {
+    note "Data Transfer Objects" as N1
+  }
+}
+
+package "Application Layer" as Application {
+  package "Services" as Services {
+    class OrderService
+    class ProductService
+    class UserService
+    class AuthService
+    class CartService
+    class PaymentService
+    class CategoryService
+    class DashboardService
+    class ShippingAddressService
+  }
+}
+
+package "Domain Layer" as Domain {
+  package "Entities" as Entities {
+    class Order
+    class OrderItem
+    class Product
+    class ProductDetail
+    class User
+    class Cart
+    class CartItem
+    class PaymentModel
+    class Category
+    class ShippingAddress
+  }
+  
+  package "Value Objects" as ValueObjects {
+    class Ward
+    class District
+    class City
+  }
+  
+  package "Enums" as Enums {
+    class OrderStatus
+    class UserRole
+    class PaymentStatus
+  }
+}
+
+package "Infrastructure Layer" as Infrastructure {
+  package "Database" as Database {
+    class PrismaSchema
+  }
+  
+  package "External Services" as ExternalSvc {
+    class CloudinaryService
+    class ViettelPostService
+    class MailService
+  }
+  
+  package "Auth" as AuthInfra {
+    class JwtStrategy
+    class LogoutService
+  }
+}
+
+' Relationships between layers
+Presentation --> Application : uses
+Application --> Domain : uses
+Application --> Infrastructure : uses
+Domain ..> Infrastructure : uses some services
+
+' Relationships for controllers
+Controllers ..> Guards : protected by
+Controllers --> Services : uses
+Controllers ..> DTOs : transforms
+
+' Services to Domain relationships
+Services --> Entities : manages
+Services --> ValueObjects : uses
+Services --> Enums : uses
+
+' Infrastructure relationships
+Services --> ExternalSvc : uses
+Services --> Database : persistence
+Services --> AuthInfra : authentication & authorization
+
+' Core relationships
+AppModule *-- Presentation : contains
+AppModule *-- Application : contains
+AppModule *-- Infrastructure : configures
+Main --> AppModule : bootstraps
+
+' Entity relationships
+Order *-- OrderItem : contains
+Order --> ShippingAddress : has
+Order --> PaymentModel : has
+Order --> OrderStatus : has
+OrderItem --> ProductDetail : references
+
+Product *-- ProductDetail : contains
+Product --> Category : belongs to
+
+Cart *-- CartItem : contains
+CartItem --> ProductDetail : references
+
+User --> UserRole : has
+ShippingAddress --> User : belongs to
+ShippingAddress o-- Ward : has
+Ward o-- District : has
+District o-- City : has
+
+' Legend
+legend
+  Relationship Types:
+  ---> : Dependency (uses)
+  ---o : Aggregation (has reference to)
+  *---> : Composition (owns/contains)
+  ..> : Usage
+  <|-- : Inheritance
+  <|.. : Implementation
+endlegend
+
+@enduml

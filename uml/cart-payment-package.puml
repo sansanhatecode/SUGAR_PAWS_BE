@@ -1,0 +1,103 @@
+@startuml
+title Biểu đồ Package - Giỏ hàng & Thanh toán (Cart & Payment)
+
+' Cấu hình style
+skinparam packageStyle rectangle
+skinparam linetype ortho
+skinparam shadowing false
+skinparam DefaultFontName Arial
+skinparam DefaultFontSize 12
+skinparam ArrowColor #666666
+skinparam BackgroundColor #FFFFFF
+skinparam PackageBackgroundColor #F8F8F8
+skinparam PackageBorderColor #CCCCCC
+
+package "Cart Module" as CartModule {
+  class CartController
+  class CartService
+  class Cart
+  class CartItem
+  
+  package "DTOs" as CartDTOs {
+    class AddToCartDto
+    class UpdateCartItemDto
+    class CartResponseDto
+  }
+}
+
+package "Payment Module" as PaymentModule {
+  class PaymentController
+  class PaymentService
+  class PaymentModel
+  
+  package "DTOs" as PaymentDTOs {
+    class CreatePaymentDto
+    class PaymentResponseDto
+    class PaymentStatusDto
+  }
+}
+
+package "Order Module" as OrderModule {
+  class OrderController
+  class OrderService
+  class Order
+  class OrderItem
+}
+
+package "User Module" as UserModule {
+  class User
+}
+
+package "Product Module" as ProductModule {
+  class ProductDetail
+}
+
+package "Authentication" as Auth {
+  class JwtAuthGuard
+}
+
+package "Infrastructure" as Infrastructure {
+  class PrismaService
+  class ViettelPostService
+  class MailService
+}
+
+package "External API" as External {
+  class PaymentGateway
+}
+
+' Relationships
+CartController --> CartService : uses
+CartController --> CartDTOs : uses
+CartController ..> JwtAuthGuard : <<protected by>>
+
+PaymentController --> PaymentService : uses
+PaymentController --> PaymentDTOs : uses
+PaymentController ..> JwtAuthGuard : <<protected by>>
+
+CartService --> PrismaService : uses
+PaymentService --> PrismaService : uses
+PaymentService ..> PaymentGateway : integrates with
+PaymentService --> MailService : uses
+
+Cart *-- CartItem : contains
+Cart --> User : belongs to
+CartItem --> ProductDetail : references
+
+Order --> PaymentModel : has
+PaymentModel --> Order : references
+
+OrderService --> PaymentService : uses
+
+' Legend
+legend
+  Relationship Types:
+  ---> : Dependency (uses)
+  ---o : Aggregation (has reference to)
+  *---> : Composition (owns/contains)
+  ..> : Usage
+  <|-- : Inheritance
+  <|.. : Implementation
+endlegend
+
+@enduml

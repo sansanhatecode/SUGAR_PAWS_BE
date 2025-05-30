@@ -1,0 +1,174 @@
+@startuml
+title Biểu đồ tuần tự - Quản lý đơn hàng (Admin)
+
+' Định nghĩa người tham gia
+actor "Admin" as Admin
+participant "JwtAuthGuard" as JwtAuth
+participant "OrderController" as Controller
+participant "ValidationPipe" as Validator
+participant "OrderService" as Service
+participant "PrismaService" as Prisma
+
+' Thiết lập màu sắc
+skinparam sequence {
+    ParticipantBackgroundColor #EDF3FE
+    ActorBackgroundColor #F5FFFA
+    LifeLineBackgroundColor #F5F5F5
+    ArrowColor #0066CC
+}
+
+' === Luồng 1: Xem tất cả đơn hàng ===
+Admin -> JwtAuth: Xác thực quyền Admin
+activate JwtAuth
+JwtAuth --> Controller: Xác thực thành công
+deactivate JwtAuth
+
+Admin -> Controller: GET /orders/all
+activate Controller
+Controller -> Service: getAllOrders()
+activate Service
+
+Service -> Prisma: order.findMany()
+activate Prisma
+note right of Prisma
+  Include:
+  - orderItems (with productDetail)
+  - shippingAddress
+  - payment
+end note
+Prisma --> Service: orders[]
+deactivate Prisma
+
+Service -> Service: Tính toán tổng tiền cho mỗi đơn hàng
+activate Service #DarkSalmon
+note right: Tổng tiền = tổng sản phẩm + phí vận chuyển
+Service --> Service: ordersWithTotal[]
+deactivate Service
+
+Service --> Controller: ApiResponse<OrderResponseDto[]>
+deactivate Service
+
+Controller --> Admin: 200 OK + danh sách đơn hàng
+deactivate Controller
+
+' === Luồng 2: Xem chi tiết đơn hàng ===
+Admin -> Controller: GET /orders/{orderId}
+activate Controller
+
+Controller -> Service: getOrderById(orderId)
+activate Service
+
+Service -> Prisma: order.findUnique(orderId)
+activate Prisma
+note right: Include tất cả thông tin liên quan
+Prisma --> Service: order
+deactivate Prisma
+
+Service -> Service: Định dạng dữ liệu chi tiết đơn hàng
+activate Service #DarkSalmon
+note right
+  - Tính toán tổng tiền
+  - Format thông tin sản phẩm
+  - Thêm thông tin người dùng
+end note
+Service --> Service: formattedOrder
+deactivate Service
+
+Service --> Controller: ApiResponse<OrderResponseDto>
+deactivate Service
+
+Controller --> Admin: 200 OK + chi tiết đơn hàng
+deactivate Controller
+
+' === Luồng 3: Cập nhật trạng thái đơn hàng ===
+Admin -> Controller: PATCH /orders/{orderId}/status
+activate Controller
+note right: Body: {status: CONFIRMED/DELIVERED/...}
+
+Controller -> Validator: validate(UpdateOrderStatusDto)
+activate Validator
+Validator --> Controller: Dữ liệu hợp lệ
+deactivate Validator
+
+Controller -> Service: updateOrderStatus(id, status)
+activate Service
+
+Service -> Prisma: order.findUnique(id)
+activate Prisma
+Prisma --> Service: currentOrder
+deactivate Prisma
+
+Service -> Service: Tạo updateData dựa trên trạng thái mới
+activate Service #DarkSalmon
+note right
+  Tùy theo trạng thái mới (newStatus):
+  - CONFIRMED: thêm confirmedAt
+  - DELIVERED: thêm deliveredAt
+  - COMPLETED: thêm completedAt
+  - CANCELLED: thêm canceledAt
+  - ...
+end note
+Service --> Service: updateData
+deactivate Service
+
+Service -> Prisma: order.update(id, updateData)
+activate Prisma
+note right
+  Include:
+  - orderItems
+  - shippingAddress
+  - payment
+end note
+Prisma --> Service: updatedOrder
+deactivate Prisma
+
+Service -> Service: Định dạng dữ liệu cập nhật
+activate Service #DarkSalmon
+Service --> Service: formattedOrder
+deactivate Service
+
+Service --> Controller: ApiResponse<OrderResponseDto>
+deactivate Service
+
+Controller --> Admin: 200 OK + đơn hàng đã cập nhật
+deactivate Controller
+
+' === Luồng 4: Cập nhật thông tin đơn hàng ===
+Admin -> Controller: PATCH /orders/{orderId}
+activate Controller
+note right: Body: UpdateOrderDto
+
+Controller -> Validator: validate(UpdateOrderDto)
+activate Validator
+Validator --> Controller: Dữ liệu hợp lệ
+deactivate Validator
+
+Controller -> Service: updateOrder(id, dto)
+activate Service
+
+Service -> Prisma: order.update(id, dto)
+activate Prisma
+note right
+  Update nhiều trường:
+  - userId
+  - shippingAddressId
+  - shippingFee
+  - trackingCode
+  - status
+  - các mốc thời gian...
+end note
+Prisma --> Service: updatedOrder
+deactivate Prisma
+
+Service -> Service: Tính toán và định dạng dữ liệu
+activate Service #DarkSalmon
+Service --> Service: formattedOrder 
+deactivate Service
+
+Service --> Controller: ApiResponse<OrderResponseDto>
+deactivate Service
+
+Controller --> Admin: 200 OK + đơn hàng đã cập nhật
+deactivate Controller
+
+@enduml

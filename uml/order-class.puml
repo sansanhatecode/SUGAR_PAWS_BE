@@ -1,0 +1,178 @@
+@startuml
+skinparam packageStyle rectangle
+skinparam linetype ortho
+title Biểu đồ lớp - Quản lý đơn hàng SUGAR PAWS
+
+' Sử dụng layout nhỏ gọn hơn
+skinparam classAttributeIconSize 0
+skinparam classFontSize 12
+skinparam packageFontSize 14
+hide circle
+
+' Chia thành các package để tổ chức tốt hơn
+package "Presentation" {
+  class OrderController {
+    -orderService
+    +createOrder()
+    +getOrders()
+    +getAllOrders()
+    +calculateShippingFee()
+    +getOrderDetail()
+    +updateOrder()
+    +updateOrderStatus()
+  }
+  
+  class JwtAuthGuard
+}
+
+package "DTOs" {
+  class CreateOrderDto {
+    +shippingAddressId: number
+    +paymentMethod: string
+    +trackingCode?: string
+    +status?: OrderStatus
+    +orderItems: CreateOrderItemDto[]
+  }
+  
+  class CreateOrderItemDto {
+    +productDetailId: number
+    +quantity: number
+  }
+  
+  class OrderResponseDto {
+    +id: number
+    +userId: number
+    +status: OrderStatus
+    +totalAmount: number
+    +shippingFee?: number
+    +trackingCode?: string
+  }
+  
+  class UpdateOrderDto
+  class UpdateOrderStatusDto
+}
+
+package "Application" {
+  class OrderService {
+    -prisma
+    -paymentService
+    +calculateShippingFee()
+    +createOrder()
+    +getOrdersByUser()
+    +getAllOrders()
+    +getOrderById()
+    +updateOrder()
+    +updateOrderStatus()
+  }
+  
+  class PaymentService {
+    +createPayment()
+  }
+  
+  class PrismaService
+}
+
+package "Domain Models" {
+  enum OrderStatus {
+    PENDING
+    CONFIRMED
+    SHIPPING
+    DELIVERED
+    COMPLETED
+    CANCELED
+    REQUEST_CANCEL
+    REFUNDED
+  }
+  
+  class Order {
+    +id: number
+    +userId: number
+    +shippingAddressId: number
+    +status: OrderStatus
+    +createdAt: Date
+    +updatedAt: Date
+    +timestamps...
+    +totalAmount: number
+  }
+  
+  class OrderItem {
+    +id: number
+    +orderId: number
+    +productDetailId: number
+    +quantity: number
+    +price?: number
+  }
+  
+  class PaymentModel {
+    +id: number
+    +orderId: number
+    +method: string
+    +status: string
+    +amount: number
+  }
+}
+
+package "Related Models" {
+  class ShippingAddress {
+    +id: number
+    +userId: number
+    +fullName: string
+    +phoneNumber: string
+    +homeNumber: string
+    +wardCode: number
+  }
+  
+  class ProductDetail {
+    +id: number
+    +productId: number
+    +price: number
+    +stock: number
+  }
+  
+  class Ward {
+    +wardCode: number
+    +name: string
+  }
+  
+  class District {
+    +districtCode: number
+    +name: string
+  }
+  
+  class City {
+    +cityCode: number
+    +name: string
+  }
+}
+
+OrderController --> OrderService
+OrderController --> CreateOrderDto
+OrderController ..> OrderResponseDto
+
+OrderService --> PrismaService
+OrderService --> PaymentService
+
+CreateOrderDto *-- CreateOrderItemDto
+
+' Mối quan hệ domain model
+Order *-- OrderItem
+Order --> ShippingAddress
+Order --> PaymentModel
+Order --> OrderStatus
+
+OrderItem --> ProductDetail
+
+ShippingAddress --> Ward
+Ward --> District
+District --> City
+
+' Sử dụng ghi chú để giải thích mối quan hệ
+note "JwtAuthGuard bảo vệ tất cả các endpoint của OrderController" as N1
+JwtAuthGuard .. N1
+N1 .. OrderController
+
+note "OrderService sử dụng\nPrismaService để tương tác\nvới cơ sở dữ liệu" as N2
+OrderService .. N2
+N2 .. PrismaService
+
+@enduml

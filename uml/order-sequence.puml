@@ -1,0 +1,81 @@
+@startuml
+title Biểu đồ tuần tự - Tạo đơn hàng (SUGAR PAWS)
+
+' Cập nhật tên người tham gia cho đồng nhất với biểu đồ lớp
+actor "Frontend" as Frontend
+participant "JwtAuthGuard" as JwtAuth
+participant "OrderController" as Controller
+participant "ValidationPipe" as Validator
+participant "OrderService" as Service
+participant "PaymentService" as PaymentService
+participant "PrismaService" as Prisma
+
+' Sử dụng màu cho dễ nhìn
+skinparam sequence {
+    ParticipantBackgroundColor #e6f2fd
+    ActorBackgroundColor #f0fff0
+    LifeLineBackgroundColor #f5f5f5
+    ArrowColor #0066cc
+}
+
+' Bắt đầu luồng tạo đơn hàng
+Frontend -> JwtAuth: Xác thực JWT
+activate JwtAuth
+JwtAuth --> Controller: Xác thực thành công
+deactivate JwtAuth
+
+Frontend -> Controller: POST /orders (CreateOrderDto)
+activate Controller
+
+Controller -> Validator: validate(CreateOrderDto)
+activate Validator
+Validator --> Controller: Valid DTO
+deactivate Validator
+
+Controller -> Service: createOrder(userId, dto)
+activate Service
+
+Service -> Prisma: findMany(productDetailIds)
+activate Prisma
+Prisma --> Service: existingProductDetails
+deactivate Prisma
+
+Service -> Service: calculateShippingFee(dto.shippingAddressId)
+activate Service #DarkSalmon
+Service -> Prisma: findUnique(shippingAddress)
+activate Prisma #DarkGray
+Prisma --> Service: shippingAddress
+deactivate Prisma
+Service --> Service: shippingFee
+deactivate Service
+
+Service -> Prisma: order.create({\n  userId,\n  shippingAddressId,\n  shippingFee,\n  orderItems\n})
+activate Prisma
+Prisma --> Service: order
+deactivate Prisma
+
+Service -> PaymentService: createPayment()
+activate PaymentService
+PaymentService -> Prisma: payment.create()
+activate Prisma #DarkGray
+Prisma --> PaymentService: payment
+deactivate Prisma
+PaymentService --> Service: payment
+deactivate PaymentService
+
+Service -> Prisma: cartItem.deleteMany()
+activate Prisma
+Prisma --> Service: void
+deactivate Prisma
+
+Service -> Prisma: payment.findFirst(orderId)
+activate Prisma
+Prisma --> Service: payment
+deactivate Prisma
+
+Service --> Controller: OrderResponseDto
+deactivate Service
+
+Controller --> Frontend: 201 Created + response
+deactivate Controller
+@enduml

@@ -1,0 +1,110 @@
+@startuml
+title Biểu đồ Package - Quản Lý Người Dùng & Xác Thực (User & Authentication)
+
+' Cấu hình style
+skinparam packageStyle rectangle
+skinparam linetype ortho
+skinparam shadowing false
+skinparam DefaultFontName Arial
+skinparam DefaultFontSize 12
+skinparam ArrowColor #666666
+skinparam BackgroundColor #FFFFFF
+skinparam PackageBackgroundColor #F8F8F8
+skinparam PackageBorderColor #CCCCCC
+
+package "User Module" as UserModule {
+  class UserController
+  class UserService
+  class User
+  
+  package "DTOs" as UserDTOs {
+    class CreateUserDto
+    class UpdateUserDto
+    class UserResponseDto
+  }
+}
+
+package "Auth Module" as AuthModule {
+  class AuthController
+  class AuthService
+  class JwtStrategy
+  class JwtAuthGuard
+  class RoleGuard
+  class LogoutService
+  
+  package "DTOs" as AuthDTOs {
+    class LoginDto
+    class RegisterDto
+    class TokenDto
+  }
+}
+
+package "Address Module" as AddressModule {
+  class ShippingAddressController
+  class ShippingAddressService
+  class ShippingAddress
+}
+
+package "Common" as Common {
+  enum UserRole
+  interface RequestWithUser
+}
+
+package "Infrastructure" as Infrastructure {
+  class PrismaService
+  class MailService
+}
+
+package "Order Module" as OrderModule {
+  class Order
+}
+
+package "Cart Module" as CartModule {
+  class Cart
+}
+
+' Relationships
+UserController --> UserService : uses
+UserController --> UserDTOs : uses
+UserController ..> JwtAuthGuard : <<protected by>>
+UserController ..> RoleGuard : <<protected by>>
+
+AuthController --> AuthService : uses
+AuthController --> AuthDTOs : uses
+AuthController --> LogoutService : uses
+
+AuthService --> PrismaService : uses
+AuthService --> JwtStrategy : uses
+AuthService --> MailService : uses
+
+UserService --> PrismaService : uses
+ShippingAddressService --> PrismaService : uses
+
+JwtAuthGuard --|> JwtStrategy : extends
+RoleGuard --|> JwtAuthGuard : extends
+
+ShippingAddressController --> ShippingAddressService : uses
+ShippingAddressController ..> JwtAuthGuard : <<protected by>>
+
+User *-- UserRole : contains
+User o-- ShippingAddress : has
+
+Cart --> User : belongs to
+Order --> User : belongs to
+
+ShippingAddress --> User : belongs to
+
+LogoutService ..> PrismaService : uses
+
+' Legend
+legend
+  Relationship Types:
+  ---> : Dependency (uses)
+  ---o : Aggregation (has reference to)
+  *---> : Composition (owns/contains)
+  ..> : Usage
+  <|-- : Inheritance
+  <|.. : Implementation
+endlegend
+
+@enduml

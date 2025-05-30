@@ -1,0 +1,152 @@
+@startuml SUGAR_PAWS Backend Architecture
+
+' Diagram style configuration
+skinparam packageStyle rectangle
+skinparam linetype ortho
+skinparam shadowing false
+skinparam DefaultFontName Arial
+skinparam DefaultFontSize 12
+skinparam ArrowColor #666666
+skinparam BackgroundColor #FFFFFF
+skinparam PackageBackgroundColor #F8F8F8
+skinparam PackageBorderColor #CCCCCC
+
+' Title
+title SUGAR_PAWS Backend - Package Architecture Diagram
+
+package "SUGAR_PAWS Backend" as SugarPaws {
+    package "Core" as Core {
+        [Main] as main
+        [AppModule] as app
+        [PrismaService] as prisma
+    }
+
+    package "Auth" as Auth {
+        [AuthModule] as auth
+        [AuthService] as authService
+        [JwtStrategy] as jwt
+        [RoleGuard] as role
+        [LogoutService] as logout
+    }
+
+    package "Common" as Common {
+        [Enums] as enums
+        [RequestTypes] as reqTypes
+        [ResponseTypes] as respTypes
+    }
+
+    package "Infrastructure" as Infra {
+        package "Database" as DB {
+            [Prisma Schema] as schema
+            [Migrations] as migrations
+            [Seeds] as seeds
+        }
+        
+        package "External Services" as External {
+            [Cloudinary] as cloudinary
+            [ViettelPost] as viettelPost
+            [Mail] as mail
+        }
+    }
+
+    package "Business Modules" as BusinessModules {
+        package "User Management" as UserMgmt {
+            [UserModule] as userModule
+            [UserService] as userService
+            [UserController] as userController
+        }
+
+        package "Product Management" as ProdMgmt {
+            [ProductModule] as productModule
+            [ProductService] as productService
+            [ProductController] as productController
+            [ProductDetailModule] as prodDetailModule
+            [CategoriesModule] as categoryModule
+        }
+
+        package "Shopping" as Shopping {
+            [CartModule] as cartModule
+            [OrderModule] as orderModule
+            [PaymentModule] as paymentModule
+            [ShippingAddressModule] as shippingAddress
+        }
+
+        package "Analytics" as Analytics {
+            [DashboardModule] as dashboardModule
+        }
+    }
+
+    package "Data Sources" as DataSrc {
+        [JSON Data Files] as jsonData
+    }
+}
+
+' Dependency relationships
+main --> app : initializes
+app --> prisma : depends on
+app --> Auth : includes
+app --> BusinessModules : configures
+
+' Auth relationships
+auth --> jwt : uses
+auth --> role : implements
+auth --> logout : provides
+auth --> userModule : authenticates
+
+' Module relationships
+UserMgmt --> Common : uses
+ProdMgmt --> Common : uses
+Shopping --> Common : uses
+Analytics --> Common : uses
+
+' Database relationships
+prisma --> DB : interfaces with
+
+' Business logic relationships
+Shopping --> userModule : references
+Shopping --> productModule : depends on
+paymentModule --> orderModule : processes
+orderModule --> cartModule : fulfills
+orderModule --> shippingAddress : uses
+productModule --> prodDetailModule : contains
+productModule --> categoryModule : organizes
+
+' External service usage
+userModule --> mail : sends notifications
+orderModule --> viettelPost : shipping integration
+productModule --> cloudinary : stores images
+
+' Data relationships
+seeds --> jsonData : loads
+categoryModule --> jsonData : initializes from
+
+' Legend
+legend right
+  | Component | Description |
+  |----------|-------------|
+  | Core | Application bootstrap and configuration |
+  | Auth | Authentication and authorization |
+  | Common | Shared types and utilities |
+  | Business Modules | Domain-specific functionality |
+  | Infrastructure | External services and database |
+  | Data Sources | Static data files |
+endlegend
+
+@enduml
+app --> Mail : imports
+app --> ViettelPost : imports
+app --> Address : imports
+app --> Cloudinary : imports
+app --> Categories : imports
+
+auth --> User : imports
+auth --> Mail : imports
+
+Product --> ProductDetail : imports
+Product --> Cloudinary : imports
+
+Order --> Payment : imports
+
+main --> app : bootstraps
+
+@enduml

@@ -1,0 +1,99 @@
+@startuml
+title Biểu đồ Package - Quản Lý Đơn Hàng (Order Management)
+
+' Cấu hình style
+skinparam packageStyle rectangle
+skinparam linetype ortho
+skinparam shadowing false
+skinparam DefaultFontName Arial
+skinparam DefaultFontSize 12
+skinparam ArrowColor #666666
+skinparam BackgroundColor #FFFFFF
+skinparam PackageBackgroundColor #F8F8F8
+skinparam PackageBorderColor #CCCCCC
+
+package "Order Module" as OrderModule {
+  class OrderController
+  class OrderService
+  class Order
+
+  package "DTOs" as OrderDTOs {
+    class CreateOrderDto
+    class OrderResponseDto
+    class UpdateOrderDto
+    class UpdateOrderStatusDto
+  }
+
+  package "Order Item" as OrderItemPkg {
+    class OrderItem
+  }
+}
+
+package "Payment Module" as PaymentModule {
+  class PaymentController
+  class PaymentService
+  class PaymentModel
+}
+
+package "Address Module" as AddressModule {
+  class ShippingAddress
+  class Ward
+  class District
+  class City
+}
+
+package "Product Module" as ProductModule {
+  class ProductDetail
+  class Product
+}
+
+package "User Module" as UserModule {
+  class User
+}
+
+package "Authentication" as Auth {
+  class JwtAuthGuard
+}
+
+package "Infrastructure" as Infrastructure {
+  class PrismaService
+}
+
+package "Cart Module" as CartModule {
+  class CartItem
+}
+
+' Relationships
+OrderController --> OrderService : uses
+OrderController --> OrderDTOs : uses
+OrderController ..> JwtAuthGuard : <<protected by>>
+
+OrderService --> PrismaService : uses
+OrderService --> PaymentService : uses
+OrderService --> Order : manages
+OrderService ..> CartModule : interacts with
+
+Order o-- OrderItem : contains
+Order --> ShippingAddress : has
+Order --> PaymentModel : has
+
+OrderItem --> ProductDetail : references
+
+ShippingAddress --> Ward : has
+Ward --> District : belongs to
+District --> City : belongs to
+
+OrderController ..> UserModule : references
+
+' Legend
+legend
+  Relationship Types:
+  ---> : Dependency (uses)
+  ---o : Aggregation (has reference to)
+  *---> : Composition (owns/contains)
+  ..> : Usage
+  <|-- : Inheritance
+  <|.. : Implementation
+endlegend
+
+@enduml

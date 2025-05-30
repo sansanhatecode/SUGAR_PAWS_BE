@@ -1,0 +1,98 @@
+@startuml
+
+skinparam packageStyle rectangle
+skinparam linetype ortho
+skinparam shadowing false
+skinparam DefaultFontName Arial
+skinparam DefaultFontSize 12
+skinparam ArrowColor #666666
+skinparam BackgroundColor #FFFFFF
+skinparam PackageBackgroundColor #F8F8F8
+skinparam PackageBorderColor #CCCCCC
+
+left to right direction
+
+' ------------------ MODULE: AUTH ------------------
+package "Authentication" as Auth {
+  class JwtAuthGuard
+  class RoleGuard
+}
+
+' ------------------ MODULE: INFRASTRUCTURE ------------------
+package "Infrastructure" as Infrastructure {
+  class PrismaService
+  class CloudinaryService
+}
+
+' ------------------ MODULE: CATEGORY ------------------
+package "Category Module" as CategoryModule {
+  class CategoryController
+  class CategoryService
+  class Category
+}
+
+' ------------------ MODULE: PRODUCT ------------------
+package "Product Module" as ProductModule {
+  class ProductController
+  class ProductService
+  class Product
+  
+  package "DTOs" as ProductDTOs {
+    class CreateProductDto
+    class UpdateProductDto
+    class ProductResponseDto
+  }
+}
+
+' ------------------ MODULE: PRODUCT DETAIL ------------------
+package "Product Detail Module" as ProductDetailModule {
+  class ProductDetailController
+  class ProductDetailService
+  class ProductDetail
+  
+  package "DTOs" as DetailDTOs {
+    class CreateProductDetailDto
+    class UpdateProductDetailDto
+  }
+}
+
+' ------------------ MODULE: CART ------------------
+package "Cart Module" as CartModule {
+  class CartItem
+}
+
+' ------------------ MODULE: ORDER ------------------
+package "Order Module" as OrderModule {
+  class OrderItem
+}
+
+' ------------ RELATIONSHIPS ------------
+
+' Product Module
+ProductController --> ProductService : uses
+ProductController --> ProductDTOs : uses
+ProductController ..> JwtAuthGuard : <<protected by>>
+ProductController ..> RoleGuard : <<protected by>>
+
+ProductService --> PrismaService : uses
+ProductService --> CloudinaryService : uses
+
+Product *-- ProductDetail : contains
+Product --> Category : belongs to
+
+' Product Detail Module
+ProductDetailController --> ProductDetailService : uses
+ProductDetailController --> DetailDTOs : uses
+ProductDetailController ..> JwtAuthGuard : <<protected by>>
+ProductDetailService --> PrismaService : uses
+
+' Category Module
+CategoryController --> CategoryService : uses
+CategoryController ..> JwtAuthGuard : <<protected by>>
+CategoryService --> PrismaService : uses
+
+' Cart & Order
+CartItem --> ProductDetail : references
+OrderItem --> ProductDetail : references
+
+@enduml
