@@ -9,6 +9,8 @@ interface ProductDetailJson {
   id: number; // Note: We won't use this ID for Prisma's auto-increment ID
   title: string;
   option1?: string | null; // Can be null or string
+  option2?: string | null;
+  option3?: string | null;
   sku: string;
   requires_shipping: boolean;
   taxable: boolean;
@@ -168,7 +170,7 @@ export async function seedProducts(fileAddress: string) {
           let type: string | null = null;
 
           color = detail.option1 || null;
-          size = detail.option1 || null;
+          size = detail.option2 || null;
           type = detail.option3 || null;
 
           // Create the ProductDetail

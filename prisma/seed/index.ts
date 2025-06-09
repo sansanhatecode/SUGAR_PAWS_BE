@@ -8,7 +8,6 @@ import { seedAddressCodes } from './addressCodeSeeder';
 const prisma = new PrismaClient();
 
 async function main() {
-  // Check if we want to seed only address data
   const seedOption = process.argv[2];
 
   if (seedOption === 'address-only') {
@@ -31,7 +30,11 @@ async function main() {
   console.log('🗑️ Deleting existing data...');
 
   await prisma.$transaction([
+    prisma.payment.deleteMany(),
+    prisma.orderItem.deleteMany(),
+    prisma.order.deleteMany(),
     prisma.cart.deleteMany(),
+    prisma.shippingAddress.deleteMany(),
     prisma.productCategory.deleteMany(),
     prisma.productDetail.deleteMany(),
     prisma.product.deleteMany(),
@@ -59,13 +62,13 @@ async function main() {
   await seedProducts('src/data/hair.json');
   await seedProducts('src/data/jewelry.json');
   await seedProducts('src/data/plus_size.json');
+  await seedProducts('src/data/flairs_details.json');
+  await seedProducts('src/data/shoes_details.json');
+  await seedProducts('src/data/shorts_details.json');
+  await seedProducts('src/data/bags_details.json');
+  await seedProducts('src/data/apron_details.json');
   await seedCart();
   console.log('✅ Seeded Products');
-
-  // await seedCart();
-  // console.log('✅ Seeded Cart');
-
-  // console.log('🎉 Seeding completed!');
 }
 
 main()

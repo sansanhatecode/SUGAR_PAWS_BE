@@ -20,7 +20,7 @@
       {
         "id": 42551613620326,
         "title": "Default Title",
-        "option1": null,
+        "option1": "Default",
         "option2": null,
         "option3": null,
         "sku": null,
@@ -178,7 +178,7 @@
       {
         "id": 42475222925414,
         "title": "Default Title",
-        "option1": null,
+        "option1": "Default",
         "option2": null,
         "option3": null,
         "sku": "STR-22925414",
@@ -2194,7 +2194,7 @@
       {
         "id": 42155118395494,
         "title": "Default Title",
-        "option1": null,
+        "option1": "Default",
         "option2": null,
         "option3": null,
         "sku": "STR-18395494",
@@ -2279,7 +2279,7 @@
       {
         "id": 42151826587750,
         "title": "Default Title",
-        "option1": null,
+        "option1": "Default",
         "option2": null,
         "option3": null,
         "sku": "STR-26587750",
@@ -2364,7 +2364,7 @@
       {
         "id": 42151826522214,
         "title": "Default Title",
-        "option1": null,
+        "option1": "Default",
         "option2": null,
         "option3": null,
         "sku": "STR-26522214",
@@ -2667,7 +2667,7 @@
       {
         "id": 42151826358374,
         "title": "Default Title",
-        "option1": null,
+        "option1": "Default",
         "option2": null,
         "option3": null,
         "sku": "STR-26358374",
@@ -3060,7 +3060,7 @@
       {
         "id": 41956120494182,
         "title": "Default Title",
-        "option1": null,
+        "option1": "Default",
         "option2": null,
         "option3": null,
         "sku": "STR-20494182",
@@ -3702,7 +3702,7 @@
       {
         "id": 41849297731686,
         "title": "Default Title",
-        "option1": null,
+        "option1": "Default",
         "option2": null,
         "option3": null,
         "sku": "STR-97731686",
@@ -5893,7 +5893,7 @@
       {
         "id": 41540314333286,
         "title": "Default Title",
-        "option1": null,
+        "option1": "Default",
         "option2": null,
         "option3": null,
         "sku": "STR-14333286",
@@ -5961,7 +5961,7 @@
       {
         "id": 41540287070310,
         "title": "Default Title",
-        "option1": null,
+        "option1": "Default",
         "option2": null,
         "option3": null,
         "sku": "STR-87070310",
@@ -6029,7 +6029,7 @@
       {
         "id": 41540266754150,
         "title": "Default Title",
-        "option1": null,
+        "option1": "Default",
         "option2": null,
         "option3": null,
         "sku": "STR-66754150",
@@ -7145,7 +7145,7 @@
       {
         "id": 40963611983974,
         "title": "Default Title",
-        "option1": null,
+        "option1": "Default",
         "option2": null,
         "option3": null,
         "sku": "MKT-KC-BFPINEAPPLE",
@@ -7264,7 +7264,7 @@
       {
         "id": 40963607887974,
         "title": "Default Title",
-        "option1": null,
+        "option1": "Default",
         "option2": null,
         "option3": null,
         "sku": "MKT-KC-BFGARLIC",
@@ -7383,7 +7383,7 @@
       {
         "id": 40963598516326,
         "title": "Default Title",
-        "option1": null,
+        "option1": "Default",
         "option2": null,
         "option3": null,
         "sku": "MKT-KC-BFEGGPLANT",
@@ -7502,7 +7502,7 @@
       {
         "id": 40963593928806,
         "title": "Default Title",
-        "option1": null,
+        "option1": "Default",
         "option2": null,
         "option3": null,
         "sku": "MKT-KC-BFPEACH",
@@ -8400,7 +8400,7 @@
       {
         "id": 40963568140390,
         "title": "Default Title",
-        "option1": null,
+        "option1": "Default",
         "option2": null,
         "option3": null,
         "sku": "MKT-KC-BPCHICK",
@@ -8519,7 +8519,7 @@
       {
         "id": 40963563126886,
         "title": "Default Title",
-        "option1": null,
+        "option1": "Default",
         "option2": null,
         "option3": null,
         "sku": "MKT-KC-BPPIG",
@@ -8638,7 +8638,7 @@
       {
         "id": 40963551887462,
         "title": "Default Title",
-        "option1": null,
+        "option1": "Default",
         "option2": null,
         "option3": null,
         "sku": "MKT-KC-BPCOW",
@@ -10370,7 +10370,7 @@
       {
         "id": 40888930304102,
         "title": "Default Title",
-        "option1": null,
+        "option1": "Default",
         "option2": null,
         "option3": null,
         "sku": "STR-30304102",
@@ -10759,7 +10759,7 @@
       {
         "id": 40574049550438,
         "title": "Default Title",
-        "option1": null,
+        "option1": "Default",
         "option2": null,
         "option3": null,
         "sku": "STR-49550438",
@@ -10844,7 +10844,7 @@
       {
         "id": 40574048993382,
         "title": "Default Title",
-        "option1": null,
+        "option1": "Default",
         "option2": null,
         "option3": null,
         "sku": "STR-48993382",
@@ -11379,7 +11379,7 @@
       {
         "id": 40469553545318,
         "title": "Default Title",
-        "option1": null,
+        "option1": "Default",
         "option2": null,
         "option3": null,
         "sku": "STR-53545318",
@@ -11739,7 +11739,7 @@
       {
         "id": 40457678717030,
         "title": "Default Title",
-        "option1": null,
+        "option1": "Default",
         "option2": null,
         "option3": null,
         "sku": null,
@@ -11824,7 +11824,7 @@
       {
         "id": 40457678684262,
         "title": "Default Title",
-        "option1": null,
+        "option1": "Default",
         "option2": null,
         "option3": null,
         "sku": null,
@@ -11909,7 +11909,7 @@
       {
         "id": 40269120012390,
         "title": "Default Title",
-        "option1": null,
+        "option1": "Default",
         "option2": null,
         "option3": null,
         "sku": null,
@@ -16896,7 +16896,7 @@
       {
         "id": 40248691523686,
         "title": "Default Title",
-        "option1": null,
+        "option1": "Default",
         "option2": null,
         "option3": null,
         "sku": null,
@@ -19340,7 +19340,7 @@
       {
         "id": 40236167626854,
         "title": "Default Title",
-        "option1": null,
+        "option1": "Default",
         "option2": null,
         "option3": null,
         "sku": "STR-67626854",
@@ -19823,7 +19823,7 @@
       {
         "id": 40222353260646,
         "title": "Default Title",
-        "option1": null,
+        "option1": "Default",
         "option2": null,
         "option3": null,
         "sku": "STR-53260646",
@@ -27514,7 +27514,7 @@
       {
         "id": 39875300556902,
         "title": "Default Title",
-        "option1": null,
+        "option1": "Default",
         "option2": null,
         "option3": null,
         "sku": "MKT-00556902",
@@ -27621,7 +27621,7 @@
       {
         "id": 39875300327526,
         "title": "Default Title",
-        "option1": null,
+        "option1": "Default",
         "option2": null,
         "option3": null,
         "sku": "MKT-00327526",
@@ -31382,7 +31382,7 @@
       {
         "id": 39874699264102,
         "title": "Default Title",
-        "option1": null,
+        "option1": "Default",
         "option2": null,
         "option3": null,
         "sku": "MKT-99264102",
@@ -31506,7 +31506,7 @@
       {
         "id": 39874683011174,
         "title": "Default Title",
-        "option1": null,
+        "option1": "Default",
         "option2": null,
         "option3": null,
         "sku": "MKT-83011174",
@@ -31775,7 +31775,7 @@
       {
         "id": 39874660794470,
         "title": "Default Title",
-        "option1": null,
+        "option1": "Default",
         "option2": null,
         "option3": null,
         "sku": "MKT-60794470",
@@ -35431,7 +35431,7 @@
       {
         "id": 39628099223654,
         "title": "Default Title",
-        "option1": null,
+        "option1": "Default",
         "option2": null,
         "option3": null,
         "sku": null,
@@ -36418,7 +36418,7 @@
       {
         "id": 39412713029734,
         "title": "Default Title",
-        "option1": null,
+        "option1": "Default",
         "option2": null,
         "option3": null,
         "sku": "STR-13029734",
@@ -37060,7 +37060,7 @@
       {
         "id": 39391257886822,
         "title": "Default Title",
-        "option1": null,
+        "option1": "Default",
         "option2": null,
         "option3": null,
         "sku": "EMIBLINE",
@@ -37230,7 +37230,7 @@
       {
         "id": 39376808575078,
         "title": "Default Title",
-        "option1": null,
+        "option1": "Default",
         "option2": null,
         "option3": null,
         "sku": null,
@@ -37332,7 +37332,7 @@
       {
         "id": 39376808378470,
         "title": "Default Title",
-        "option1": null,
+        "option1": "Default",
         "option2": null,
         "option3": null,
         "sku": null,
@@ -37434,7 +37434,7 @@
       {
         "id": 39376808280166,
         "title": "Default Title",
-        "option1": null,
+        "option1": "Default",
         "option2": null,
         "option3": null,
         "sku": null,
@@ -37519,7 +37519,7 @@
       {
         "id": 39366314033254,
         "title": "Default Title",
-        "option1": null,
+        "option1": "Default",
         "option2": null,
         "option3": null,
         "sku": null,
@@ -44457,7 +44457,7 @@
       {
         "id": 32324038688870,
         "title": "Default Title",
-        "option1": null,
+        "option1": "Default",
         "option2": null,
         "option3": null,
         "sku": null,
@@ -45305,7 +45305,7 @@
       {
         "id": 32175266955366,
         "title": "Default Title",
-        "option1": null,
+        "option1": "Default",
         "option2": null,
         "option3": null,
         "sku": null,
@@ -45455,7 +45455,7 @@
       {
         "id": 32175266922598,
         "title": "Default Title",
-        "option1": null,
+        "option1": "Default",
         "option2": null,
         "option3": null,
         "sku": null,
@@ -45605,7 +45605,7 @@
       {
         "id": 32175266693222,
         "title": "Default Title",
-        "option1": null,
+        "option1": "Default",
         "option2": null,
         "option3": null,
         "sku": null,
@@ -45721,7 +45721,7 @@
       {
         "id": 32175265972326,
         "title": "Default Title",
-        "option1": null,
+        "option1": "Default",
         "option2": null,
         "option3": null,
         "sku": null,
@@ -45871,7 +45871,7 @@
       {
         "id": 32175265546342,
         "title": "Default Title",
-        "option1": null,
+        "option1": "Default",
         "option2": null,
         "option3": null,
         "sku": null,
@@ -45971,7 +45971,7 @@
       {
         "id": 32175265579110,
         "title": "Default Title",
-        "option1": null,
+        "option1": "Default",
         "option2": null,
         "option3": null,
         "sku": null,
@@ -46056,7 +46056,7 @@
       {
         "id": 32146617237606,
         "title": "Default Title",
-        "option1": null,
+        "option1": "Default",
         "option2": null,
         "option3": null,
         "sku": null,
@@ -46155,7 +46155,7 @@
       {
         "id": 32146615369830,
         "title": "Default Title",
-        "option1": null,
+        "option1": "Default",
         "option2": null,
         "option3": null,
         "sku": null,
@@ -46408,7 +46408,7 @@
       {
         "id": 32129011646566,
         "title": "Default Title",
-        "option1": null,
+        "option1": "Default",
         "option2": null,
         "option3": null,
         "sku": null,
@@ -46627,7 +46627,7 @@
       {
         "id": 32129011548262,
         "title": "Default Title",
-        "option1": null,
+        "option1": "Default",
         "option2": null,
         "option3": null,
         "sku": null,
@@ -46709,7 +46709,7 @@
       {
         "id": 32129011581030,
         "title": "Default Title",
-        "option1": null,
+        "option1": "Default",
         "option2": null,
         "option3": null,
         "sku": null,
@@ -51564,7 +51564,7 @@
       {
         "id": 27979476631654,
         "title": "Default Title",
-        "option1": null,
+        "option1": "Default",
         "option2": null,
         "option3": null,
         "sku": "STR-LSSNLWSC",

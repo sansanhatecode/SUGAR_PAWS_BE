@@ -52,7 +52,15 @@ export class CartItemService {
         throw new NotFoundException('ProductDetail not found');
       }
 
-      // Kiểm tra xem sản phẩm đã tồn tại trong giỏ hàng chưa
+      // Kiểm tra xem sản phẩm đã hết hàng chưa
+      if (productDetail.stock === 0) {
+        return {
+          statusCode: HttpStatus.BAD_REQUEST,
+          message: 'Product is out of stock',
+          error: 'Out of stock',
+        };
+      }
+
       const existingCartItem = await prisma.cartItem.findFirst({
         where: {
           cartId: cart.id,
@@ -60,7 +68,6 @@ export class CartItemService {
         },
       });
 
-      // Kiểm tra số lượng yêu cầu có vượt quá số lượng hiện có của sản phẩm hay không
       const newQuantity = existingCartItem
         ? existingCartItem.quantity + dto.quantity
         : dto.quantity;

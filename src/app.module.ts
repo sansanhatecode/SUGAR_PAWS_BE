@@ -13,6 +13,7 @@ import { ShippingAddressModule } from './modules/address/shipping-address/shippi
 import { OrderModule } from './modules/order/order.module';
 import { CloudinaryModule } from './modules/cloudinary';
 import { CategoriesModule } from './modules/categories/categories.module';
+import { ReviewModule } from './modules/review/review.module';
 
 @Module({
   imports: [
@@ -43,6 +44,7 @@ import { CategoriesModule } from './modules/categories/categories.module';
     OrderModule,
     CloudinaryModule,
     CategoriesModule,
+    ReviewModule,
   ],
 })
 export class AppModule {}
