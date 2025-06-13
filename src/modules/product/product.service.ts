@@ -839,4 +839,92 @@ export class ProductService {
       );
     }
   }
+
+  async searchByName(
+    searchTerm: string,
+    page = 1,
+    itemPerPage = 40,
+  ): Promise<ApiResponse<{ products: Product[]; totalProducts: number }>> {
+    try {
+      if (!searchTerm || searchTerm.trim() === '') {
+        throw new BadRequestException('Search term is required');
+      }
+
+      const skip = (page - 1) * itemPerPage;
+
+      // Search products where name contains the search term (case insensitive)
+      const whereClause = {
+        name: {
+          contains: searchTerm.trim(),
+          mode: 'insensitive' as const,
+        },
+      };
+
+      const [products, totalProducts] = await Promise.all([
+        this.prisma.product.findMany({
+          where: whereClause,
+          skip,
+          take: itemPerPage,
+          include: {
+            productDetails: true,
+            categories: {
+              include: {
+                category: true,
+              },
+            },
+          },
+        }),
+        this.prisma.product.count({
+          where: whereClause,
+        }),
+      ]);
+
+      const formattedProducts = products.map((product) => {
+        const productDetails = product.productDetails;
+        const categories = product.categories?.map((pc) => pc.category) || [];
+        return {
+          ...product,
+          totalStock: productDetails.reduce(
+            (sum, detail) => sum + detail.stock,
+            0,
+          ),
+          totalSales: productDetails.reduce(
+            (sum, detail) =>
+              sum + (Number.isFinite(detail.sale) ? Number(detail.sale) : 0),
+            0,
+          ),
+          maxPrice: productDetails.length
+            ? Math.max(...productDetails.map((detail) => detail.price))
+            : 0,
+          minPrice: productDetails.length
+            ? Math.min(...productDetails.map((detail) => detail.price))
+            : 0,
+          colors: [
+            ...new Set(productDetails.map((detail) => detail.color)),
+          ].filter((color): color is string => color !== null),
+          productDetails: productDetails.map((detail) => ({
+            ...detail,
+            size: detail.size ?? undefined,
+            color: detail.color ?? undefined,
+          })),
+          categories,
+        };
+      });
+
+      return {
+        statusCode: HttpStatus.OK,
+        message: 'Products search completed successfully',
+        data: {
+          products: formattedProducts,
+          totalProducts,
+        },
+      };
+    } catch (error) {
+      console.error('[ProductService] SearchByName error:', error);
+      if (error instanceof BadRequestException) {
+        throw error;
+      }
+      throw new InternalServerErrorException('Failed to search products');
+    }
+  }
 }

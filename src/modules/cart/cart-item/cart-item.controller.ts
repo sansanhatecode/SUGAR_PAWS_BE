@@ -8,13 +8,13 @@ import {
   UseGuards,
   Patch,
   HttpCode,
+  Res,
 } from '@nestjs/common';
+import { Response } from 'express';
 import { CartItemService } from './cart-item.service';
 import { CreateCartItemDto } from './dto/create-cart-item.dto';
-import { CartItem } from './cart-item.model';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 import { AuthenticatedRequest } from 'src/common/request.types';
-import { ApiResponse } from 'src/common/response.types';
 import { UpdateCartItemDto } from './dto/update-cart-item.dto';
 
 @Controller('cart-item')
@@ -26,18 +26,25 @@ export class CartItemController {
   async addCartItem(
     @Req() req: AuthenticatedRequest,
     @Body() dto: CreateCartItemDto,
-  ): Promise<ApiResponse<CartItem>> {
+    @Res() res: Response,
+  ): Promise<void> {
     const userId = req.user?.userId;
-    return this.cartItemService.addCartItem(Number(userId), dto);
+    const result = await this.cartItemService.addCartItem(Number(userId), dto);
+    res.status(result.statusCode).json(result);
   }
 
   @Delete(':id')
   async removeCartItem(
     @Req() req: AuthenticatedRequest,
     @Param('id') id: string,
-  ): Promise<ApiResponse<null>> {
+    @Res() res: Response,
+  ): Promise<void> {
     const userId = req.user?.userId;
-    return this.cartItemService.removeCartItem(Number(userId), Number(id));
+    const result = await this.cartItemService.removeCartItem(
+      Number(userId),
+      Number(id),
+    );
+    res.status(result.statusCode).json(result);
   }
 
   @Patch(':id')
@@ -46,11 +53,18 @@ export class CartItemController {
     @Req() req: AuthenticatedRequest,
     @Param('id') id: string,
     @Body() dto: UpdateCartItemDto,
-  ): Promise<ApiResponse<any>> {
+    @Res() res: Response,
+  ): Promise<void> {
     const userId = req.user?.userId;
     if (dto.quantity === 0) {
-      return this.cartItemService.removeCartItem(Number(userId), Number(id));
+      const result = await this.cartItemService.removeCartItem(
+        Number(userId),
+        Number(id),
+      );
+      res.status(result.statusCode).json(result);
+      return;
     }
-    return this.cartItemService.updateCartItem(Number(id), dto);
+    const result = await this.cartItemService.updateCartItem(Number(id), dto);
+    res.status(result.statusCode).json(result);
   }
 }

@@ -32,7 +32,6 @@ export class CartItemService {
         };
       }
 
-      // Kiểm tra xem cart của user có tồn tại không, nếu không thì tạo mới
       let cart = await prisma.cart.findUnique({
         where: { userId },
       });
@@ -157,6 +156,7 @@ export class CartItemService {
       return {
         statusCode: HttpStatus.OK,
         message: 'CartItem deleted successfully',
+        data: null,
       };
     } catch (error: unknown) {
       return {

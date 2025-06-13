@@ -129,6 +129,47 @@ export class ProductController {
     }
   }
 
+  @Get('search')
+  async searchByName(
+    @Query('name') searchTerm: string,
+    @Query('page') page?: number,
+    @Query('itemPerPage') itemPerPage?: number,
+  ): Promise<ApiResponse<any>> {
+    try {
+      if (!searchTerm) {
+        throw new BadRequestException('Search term is required');
+      }
+      return await this.productService.searchByName(
+        searchTerm,
+        page ? Number(page) : 1,
+        itemPerPage ? Number(itemPerPage) : 40,
+      );
+    } catch (error: unknown) {
+      console.error('[ProductController] SearchByName error:', error);
+      if (error instanceof HttpException) {
+        throw error;
+      }
+      throw new InternalServerErrorException('Failed to search products');
+    }
+  }
+
+  @Get(':id/related')
+  async findRelatedProducts(
+    @Param('id') id: string,
+  ): Promise<ApiResponse<any>> {
+    try {
+      return await this.productService.findRelatedProducts(Number(id));
+    } catch (error: unknown) {
+      console.error('[ProductController] FindRelatedProducts error:', error);
+      if (error instanceof HttpException) {
+        throw error;
+      }
+      throw new InternalServerErrorException(
+        'Failed to retrieve related products',
+      );
+    }
+  }
+
   @Get(':id')
   async findOne(@Param('id') id: string): Promise<ApiResponse<any>> {
     try {

@@ -14,6 +14,7 @@ import { OrderModule } from './modules/order/order.module';
 import { CloudinaryModule } from './modules/cloudinary';
 import { CategoriesModule } from './modules/categories/categories.module';
 import { ReviewModule } from './modules/review/review.module';
+import { DashboardModule } from './modules/dashboard/dashboard.module';
 
 @Module({
   imports: [
@@ -45,6 +46,7 @@ import { ReviewModule } from './modules/review/review.module';
     CloudinaryModule,
     CategoriesModule,
     ReviewModule,
+    DashboardModule,
   ],
 })
 export class AppModule {}
