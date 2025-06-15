@@ -31,7 +31,6 @@ export class ReviewService {
   private mapReviewToResponse(review: ReviewWithIncludes): ReviewResponseDto {
     return {
       id: review.id,
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
       orderItemId: review.orderItemId,
       rating: review.rating,
       comment: review.comment || undefined,
@@ -416,6 +415,93 @@ export class ReviewService {
       return {
         statusCode: 500,
         message: 'Failed to retrieve reviews',
+        error: 'Internal Server Error',
+      };
+    }
+  }
+
+  // New method to check if an order can be reviewed
+  async checkOrderReviewStatus(orderId: number): Promise<
+    ApiResponse<{
+      canReview: boolean;
+      completedItems: number;
+      reviewedItems: number;
+      pendingReviewItems: {
+        orderItemId: number;
+        productName: string;
+        productId: number;
+      }[];
+    }>
+  > {
+    try {
+      // Check if order exists and is completed
+      const order = await this.prisma.order.findUnique({
+        where: { id: orderId },
+        include: {
+          orderItems: {
+            include: {
+              productDetail: {
+                include: {
+                  product: { select: { id: true, name: true } },
+                },
+              },
+              review: true,
+            },
+          },
+        },
+      });
+
+      if (!order) {
+        return {
+          statusCode: 404,
+          message: 'Order not found',
+          error: 'Not Found',
+        };
+      }
+
+      // Only completed orders can be reviewed
+      if (order.status !== 'COMPLETED') {
+        return {
+          statusCode: 200,
+          message: 'Order review status retrieved successfully',
+          data: {
+            canReview: false,
+            completedItems: 0,
+            reviewedItems: 0,
+            pendingReviewItems: [],
+          },
+        };
+      }
+
+      const completedItems = order.orderItems.length;
+      const reviewedItems = order.orderItems.filter(
+        (item) => item.review,
+      ).length;
+      const pendingReviewItems = order.orderItems
+        .filter((item) => !item.review)
+        .map((item) => ({
+          orderItemId: item.id,
+          productName: item.productDetail.product.name,
+          productId: item.productDetail.product.id,
+        }));
+
+      const canReview = pendingReviewItems.length > 0;
+
+      return {
+        statusCode: 200,
+        message: 'Order review status retrieved successfully',
+        data: {
+          canReview,
+          completedItems,
+          reviewedItems,
+          pendingReviewItems,
+        },
+      };
+    } catch (error) {
+      console.error('[ReviewService] CheckOrderReviewStatus error:', error);
+      return {
+        statusCode: 500,
+        message: 'Failed to check order review status',
         error: 'Internal Server Error',
       };
     }

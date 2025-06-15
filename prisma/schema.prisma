@@ -46,6 +46,7 @@ model User {
   dayOfBirth        Int?
   monthOfBirth      Int?
   yearOfBirth       Int?
+  chatHistory       ChatHistory[]
 }
 
 model Category {
@@ -234,5 +235,26 @@ model Review {
 
   orderItem OrderItem @relation(fields: [orderItemId], references: [id], onDelete: Cascade)
 
-  @@unique([orderItemId]) // One review per order item
+  @@unique([orderItemId])
+}
+
+model Event {
+  id          Int      @id @default(autoincrement())
+  name        String   @db.VarChar(255)
+  description String?  @db.Text
+  eventTime   DateTime
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model ChatHistory {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  message   String   @db.Text
+  response  String   @db.Text
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
 }

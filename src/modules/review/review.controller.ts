@@ -112,6 +112,37 @@ export class ReviewController {
     }
   }
 
+  @Get('order/:orderId/status')
+  @ApiOperation({ summary: 'Check if an order can be reviewed' })
+  @ApiParam({ name: 'orderId', description: 'Order ID' })
+  @ApiResponse({
+    status: 200,
+    description: 'Order review status retrieved successfully',
+  })
+  async checkOrderReviewStatus(
+    @Param('orderId', ParseIntPipe) orderId: number,
+  ): Promise<
+    ApiResponseType<{
+      canReview: boolean;
+      completedItems: number;
+      reviewedItems: number;
+      pendingReviewItems: {
+        orderItemId: number;
+        productName: string;
+        productId: number;
+      }[];
+    }>
+  > {
+    try {
+      return await this.reviewService.checkOrderReviewStatus(orderId);
+    } catch (error) {
+      console.error('[ReviewController] CheckOrderReviewStatus error:', error);
+      throw new InternalServerErrorException(
+        'Failed to check order review status',
+      );
+    }
+  }
+
   @Get('product/:productId')
   @ApiOperation({ summary: 'Get all reviews for a specific product' })
   @ApiParam({ name: 'productId', description: 'Product ID' })
