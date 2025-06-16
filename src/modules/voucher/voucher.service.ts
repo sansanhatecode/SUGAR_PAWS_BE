@@ -405,23 +405,19 @@ export class VoucherService {
     }
   }
 
-  async getUserVouchers(userId: number): Promise<ApiResponse<any[]>> {
+  async getUserVouchers(): Promise<ApiResponse<VoucherResponseDto[]>> {
     try {
-      const userVouchers = await this.prisma.userVoucher.findMany({
-        where: { userId },
-        include: {
-          voucher: true,
-        },
-        orderBy: { usedAt: 'desc' },
+      const vouchers = await this.prisma.voucher.findMany({
+        orderBy: { createdAt: 'desc' },
       });
 
       return {
         statusCode: 200,
-        message: 'User vouchers retrieved successfully',
-        data: userVouchers,
+        message: 'All vouchers retrieved successfully',
+        data: vouchers as VoucherResponseDto[],
       };
     } catch {
-      throw new BadRequestException('Failed to retrieve user vouchers');
+      throw new BadRequestException('Failed to retrieve vouchers');
     }
   }
 }

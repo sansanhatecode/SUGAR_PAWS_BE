@@ -51,11 +51,8 @@ export class VoucherController {
 
   @UseGuards(JwtAuthGuard)
   @Get('my-vouchers')
-  async getUserVouchers(
-    @Req() req: RequestWithUser,
-  ): Promise<ApiResponse<any[]>> {
-    const userId = Number(req && req.user && req.user.userId);
-    return await this.voucherService.getUserVouchers(userId);
+  async getUserVouchers(): Promise<ApiResponse<VoucherResponseDto[]>> {
+    return await this.voucherService.getUserVouchers();
   }
 
   @UseGuards(JwtAuthGuard, RoleGuard)
