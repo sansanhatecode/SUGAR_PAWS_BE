@@ -24,13 +24,19 @@ export class ChatResponseDto {
     example: 'I want to learn about your fashion collections',
   })
   message: string;
-
   @ApiProperty({
     description: 'Response from chatbot',
     example:
       'Hello! I can help you explore our fashion collections. What type of clothing or accessories are you looking for?',
   })
   response: string;
+
+  @ApiProperty({
+    description: 'Response format type (markdown, plain)',
+    example: 'markdown',
+    default: 'markdown',
+  })
+  responseFormat?: string;
 
   @ApiProperty({
     description: 'Creation time',

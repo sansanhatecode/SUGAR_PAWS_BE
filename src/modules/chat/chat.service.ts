@@ -1,3 +1,6 @@
+/* eslint-disable @typescript-eslint/no-unsafe-call */
+/* eslint-disable @typescript-eslint/no-unsafe-member-access */
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
 import {
   Injectable,
   Logger,
@@ -73,11 +76,21 @@ export class ChatService {
       let additionalContext = '';
 
       if (keywords.length > 0) {
-        const productContext = await this.chatContextService.getProductContext(
-          keywords[0],
-        );
-        if (productContext) {
+        // Get products matching multiple keywords
+        const products =
+          await this.chatContextService.searchProductsByKeywords(keywords);
+        if (products.length > 0) {
+          const productContext = this.formatProductsForContext(products);
           additionalContext += productContext;
+        }
+
+        // Also get general product context if no specific products found
+        if (products.length === 0) {
+          const productContext =
+            await this.chatContextService.getProductContext(keywords[0]);
+          if (productContext) {
+            additionalContext += productContext;
+          }
         }
       }
 
@@ -89,6 +102,14 @@ export class ChatService {
       3. Answer questions about orders, delivery, and returns
       4. Assist with size guides and product information
       5. Support customers in a friendly and professional manner
+      6. When customers ask about specific products, provide product links in format: /collections/[product-id]
+        IMPORTANT INSTRUCTIONS FOR PRODUCT RECOMMENDATIONS:
+      - When you find relevant products in the context, ALWAYS include the product link in your response
+      - Format product links as clickable Markdown links: [Product Name](/collections/[product-id])
+      - Example: [Áo sơ mi trắng](/collections/123)
+      - When recommending products, provide the exact clickable link so customers can easily view them
+      - If multiple products match the request, list them with their respective clickable links
+      - Always be helpful and encourage customers to check out the recommended products
       
       Please respond briefly, helpfully, and always maintain a positive attitude. 
       If you're unsure about information, suggest the customer contact the support team.
@@ -137,6 +158,7 @@ export class ChatService {
         id: chatHistory.id,
         message: chatHistory.message,
         response: chatHistory.response,
+        responseFormat: 'markdown',
         createdAt: chatHistory.createdAt,
       };
     } catch (error) {
@@ -164,6 +186,7 @@ export class ChatService {
           id: chat.id,
           message: chat.message,
           response: chat.response,
+          responseFormat: 'markdown',
           createdAt: chat.createdAt,
         })),
         total,
@@ -184,7 +207,23 @@ export class ChatService {
       throw new InternalServerErrorException('Unable to clear chat history');
     }
   }
+  private formatProductsForContext(products: any[]): string {
+    if (products.length === 0) {
+      return '';
+    }
 
+    const productContext = products
+      .map((product) => {
+        const price = product.productDetails[0]?.price || 0;
+        const categoryNames = product.categories
+          .map((pc: { category: { name: string } }) => pc.category.name)
+          .join(', ');
+        return `- [${product.name}](/collections/${product.id}): ${product.description}${categoryNames ? ` | Categories: ${categoryNames}` : ''} | Price from: ${price}đ`;
+      })
+      .join('\n');
+
+    return `\nFound products matching your request:\n${productContext}`;
+  }
   private getFallbackResponse(message: string): string {
     const lowerMessage = message.toLowerCase();
 
@@ -196,7 +235,7 @@ export class ChatService {
       lowerMessage.includes('quần áo') ||
       lowerMessage.includes('thời trang')
     ) {
-      return 'We have a wide variety of fashion products including clothing, accessories, shoes, and bags. You can browse our latest collections on our website or contact us for personalized style advice.';
+      return 'We have a wide variety of fashion products including clothing, accessories, shoes, and bags. You can browse our [latest collections](/collections) on our website. Try asking me about specific items like "show me dresses" or "I need a jacket" and I\'ll provide direct links to products that match your needs!';
     }
 
     if (
@@ -205,7 +244,7 @@ export class ChatService {
       lowerMessage.includes('đơn hàng') ||
       lowerMessage.includes('giao hàng')
     ) {
-      return 'For order and delivery information, you can check in your account or contact our customer support team for detailed assistance.';
+      return 'For order and delivery information, you can check in your [account](/account) or [contact our customer support team](/contact) for detailed assistance.';
     }
 
     if (
@@ -216,9 +255,9 @@ export class ChatService {
       lowerMessage.includes('kích thước') ||
       lowerMessage.includes('đổi trả')
     ) {
-      return 'For size guides, fitting advice, or information about returns and exchanges, please check our size chart or contact our support team. We want to ensure you get the perfect fit!';
+      return 'For size guides, fitting advice, or information about returns and exchanges, please check our [size chart](/size-guide) or [contact our support team](/contact). We want to ensure you get the perfect fit!';
     }
 
-    return 'Thank you for contacting Sugar Paws! I will try my best to support you. Could you describe your issue in more detail?';
+    return 'Thank you for contacting Sugar Paws! I will try my best to support you. Could you describe your issue in more detail? You can also browse our [products](/collections) or [contact us](/contact) for assistance.';
   }
 }
