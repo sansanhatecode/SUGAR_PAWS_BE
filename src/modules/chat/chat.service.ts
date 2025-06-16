@@ -94,7 +94,6 @@ export class ChatService {
         }
       }
 
-      // System prompt for fashion store chatbot
       const systemPrompt = `You are a customer support chatbot for Sugar Paws fashion store. 
       Your tasks are:
       1. Provide advice on fashion products (clothing, accessories, shoes, bags)
@@ -127,10 +126,10 @@ export class ChatService {
       let botResponse: string;
       try {
         const completion = await this.openai.chat.completions.create({
-          model: 'gpt-3.5-turbo',
+          model: 'gpt-4o-mini',
           messages,
           max_tokens: 500,
-          temperature: 0.7,
+          temperature: 0,
         });
 
         botResponse =
@@ -138,7 +137,6 @@ export class ChatService {
           'Sorry, I cannot answer this question at the moment.';
       } catch (error) {
         this.logger.error('Error calling OpenAI API:', error);
-        // Fallback response when API fails
         botResponse = this.getFallbackResponse(chatRequest.message);
       }
 

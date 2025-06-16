@@ -44,4 +44,8 @@ export class CreateOrderDto {
   @Type(() => CreateOrderItemDto)
   @IsNotEmpty()
   orderItems: CreateOrderItemDto[];
+
+  @IsString()
+  @IsOptional()
+  voucherCode?: string; // Mã voucher áp dụng (tùy chọn)
 }

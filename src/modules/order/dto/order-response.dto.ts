@@ -22,4 +22,16 @@ export class OrderResponseDto implements Order {
   shippingAddress?: any;
   orderItems?: OrderItem[];
   payId?: number;
+
+  // Voucher information
+  voucherId?: number;
+  voucher?: {
+    id: number;
+    code: string;
+    name: string;
+    discountType: string;
+    discountValue: number;
+  };
+  discountAmount?: number; // Số tiền được giảm
+  originalAmount?: number; // Tổng tiền gốc trước khi giảm
 }

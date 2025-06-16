@@ -4,6 +4,7 @@ import { seedCategories } from './categorySeeder';
 import { seedProducts } from './productSeeder';
 import { seedCart } from './cartSeeder';
 import { seedAddressCodes } from './addressCodeSeeder';
+import { seedVouchers } from './voucherSeeder';
 
 const prisma = new PrismaClient();
 
@@ -33,6 +34,7 @@ async function main() {
     prisma.payment.deleteMany(),
     prisma.orderItem.deleteMany(),
     prisma.order.deleteMany(),
+    prisma.voucher.deleteMany(),
     prisma.cart.deleteMany(),
     prisma.shippingAddress.deleteMany(),
     prisma.productCategory.deleteMany(),
@@ -69,6 +71,9 @@ async function main() {
   await seedProducts('src/data/apron_details.json');
   await seedCart();
   console.log('✅ Seeded Products');
+
+  await seedVouchers();
+  console.log('✅ Seeded Vouchers');
 }
 
 main()

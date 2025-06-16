@@ -14,6 +14,7 @@ import { CreateOrderDto } from './dto/create-order.dto';
 import { OrderResponseDto } from './dto/order-response.dto';
 import { UpdateOrderDto } from './dto/update-order.dto';
 import { UpdateOrderStatusDto } from './dto/update-order-status.dto';
+import { CalculateOrderTotalDto } from './dto/calculate-order-total.dto';
 import { JwtAuthGuard } from '../../auth/jwt-auth.guard';
 import { RequestWithUser } from '../address/shipping-address/interfaces/request-with-user.interface';
 import type { ApiResponse } from '../../common/response.types';
@@ -81,6 +82,19 @@ export class OrderController {
     return await this.orderService.updateOrderStatus(
       id,
       updateOrderStatusDto.status,
+    );
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Post('calculate-total')
+  async calculateOrderTotal(
+    @Body() calculateTotalDto: CalculateOrderTotalDto,
+    @Req() req: RequestWithUser,
+  ) {
+    const userId = Number(req && req.user && req.user.userId);
+    return await this.orderService.calculateOrderTotal(
+      userId,
+      calculateTotalDto,
     );
   }
 }

@@ -4,6 +4,7 @@ import { PrismaService } from '../../prisma.service';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { OrderResponseDto } from './dto/order-response.dto';
 import { PaymentService } from '../payment/payment.service';
+import { VoucherService } from '../voucher/voucher.service';
 import { ApiResponse } from '../../common/response.types';
 import { UpdateOrderDto } from './dto/update-order.dto';
 
@@ -12,6 +13,7 @@ export class OrderService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly paymentService: PaymentService,
+    private readonly voucherService: VoucherService,
   ) {}
 
   // Calculate shipping fee based on the shipping address
@@ -105,6 +107,67 @@ export class OrderService {
     }
   }
 
+  // Tách logic tính toán tiền đơn hàng thành hàm riêng
+  private calculateOrderAmounts(
+    totalProduct: number,
+    shippingFee: number,
+    voucher?: {
+      type: string;
+      discountType: string;
+      discountValue: number;
+      maxDiscountAmount?: number | null;
+    },
+  ): {
+    originalAmount: number;
+    discountAmount: number;
+    finalAmount: number;
+  } {
+    const originalAmount = totalProduct + shippingFee;
+    let discountAmount = 0;
+
+    if (voucher) {
+      if (voucher.type === 'DISCOUNT') {
+        // Voucher giảm giá chỉ áp dụng trên tiền product, không tính phí ship
+        if (voucher.discountType === 'PERCENTAGE') {
+          discountAmount = (totalProduct * voucher.discountValue) / 100;
+          // Áp dụng giới hạn giảm giá tối đa nếu có
+          if (
+            voucher.maxDiscountAmount &&
+            discountAmount > voucher.maxDiscountAmount
+          ) {
+            discountAmount = voucher.maxDiscountAmount;
+          }
+        } else if (voucher.discountType === 'FIXED_AMOUNT') {
+          // Đảm bảo không giảm quá tiền product
+          discountAmount = Math.min(voucher.discountValue, totalProduct);
+        }
+      } else if (voucher.type === 'SHIPPING') {
+        // Voucher giảm phí vận chuyển - chỉ áp dụng lên phí ship
+        if (voucher.discountType === 'PERCENTAGE') {
+          discountAmount = (shippingFee * voucher.discountValue) / 100;
+          // Áp dụng giới hạn giảm giá tối đa nếu có
+          if (
+            voucher.maxDiscountAmount &&
+            discountAmount > voucher.maxDiscountAmount
+          ) {
+            discountAmount = voucher.maxDiscountAmount;
+          }
+        } else if (voucher.discountType === 'FIXED_AMOUNT') {
+          // Đảm bảo không giảm quá phí ship
+          discountAmount = Math.min(voucher.discountValue, shippingFee);
+        }
+      }
+    }
+
+    const finalAmount = Math.max(0, originalAmount - discountAmount);
+
+    return {
+      originalAmount,
+      discountAmount,
+      finalAmount,
+    };
+  }
+
   async createOrder(
     userId: number,
     dto: CreateOrderDto,
@@ -113,7 +176,7 @@ export class OrderService {
     const productDetailIds = dto.orderItems.map((item) => item.productDetailId);
     const existingProductDetails = await this.prisma.productDetail.findMany({
       where: { id: { in: productDetailIds } },
-      select: { id: true },
+      select: { id: true, price: true },
     });
 
     const existingProductDetailIds = new Set(
@@ -129,17 +192,85 @@ export class OrderService {
       );
     }
 
-    // Calculate shipping fee if not provided
+    // Calculate shipping fee
     const shippingFeeResponse = await this.calculateShippingFee(
       dto.shippingAddressId,
     );
     const shippingFee = shippingFeeResponse.data?.shippingFee ?? 0;
 
-    // Tính tổng tiền hàng (cần truy vấn giá thực tế, ở đây chỉ demo = 0)
-    const totalProduct = 0;
-    const totalAmount = totalProduct + shippingFee;
+    // Calculate total product amount (actual price calculation)
+    const totalProduct = dto.orderItems.reduce((sum, item) => {
+      const productDetail = existingProductDetails.find(
+        (pd) => pd.id === item.productDetailId,
+      );
+      const price = productDetail?.price ?? 0;
+      return sum + price * item.quantity;
+    }, 0);
 
-    // 1. Tạo order trước (chưa có payment)
+    let voucherId: number | undefined;
+    let voucherInfo: {
+      id: number;
+      code: string;
+      name: string;
+      type: string;
+      discountType: string;
+      discountValue: number;
+    } | null = null;
+    let voucherData:
+      | {
+          type: string;
+          discountType: string;
+          discountValue: number;
+          maxDiscountAmount?: number | null;
+        }
+      | undefined;
+
+    // Apply voucher if provided
+    if (dto.voucherCode) {
+      try {
+        // Validate voucher - cần truyền đúng giá trị để validate
+        const voucherValidation = await this.voucherService.validateVoucher(
+          dto.voucherCode,
+          userId,
+          totalProduct + shippingFee, // Tổng đơn hàng cho validation
+          shippingFee,
+        );
+
+        if (voucherValidation.isValid) {
+          // Get voucher details for discount calculation
+          const voucher = await this.prisma.voucher.findUnique({
+            where: { code: dto.voucherCode },
+          });
+
+          if (voucher) {
+            voucherId = voucher.id;
+            voucherInfo = {
+              id: voucher.id,
+              code: voucher.code,
+              name: voucher.name,
+              type: voucher.type,
+              discountType: voucher.discountType,
+              discountValue: voucher.discountValue,
+            };
+            voucherData = {
+              type: voucher.type,
+              discountType: voucher.discountType,
+              discountValue: voucher.discountValue,
+              maxDiscountAmount: voucher.maxDiscountAmount,
+            };
+          }
+        }
+      } catch (error) {
+        console.warn('Voucher validation failed:', error);
+        // Continue without voucher if validation fails
+      }
+    }
+
+    // Tính toán số tiền sử dụng hàm mới
+    const { originalAmount, discountAmount, finalAmount } =
+      this.calculateOrderAmounts(totalProduct, shippingFee, voucherData);
+
+    // Create order
     const order = await this.prisma.order.create({
       data: {
         userId,
@@ -147,6 +278,7 @@ export class OrderService {
         status: dto.status,
         shippingFee,
         trackingCode: dto.trackingCode,
+        voucherId,
         orderItems: {
           create: dto.orderItems.map((item) => ({
             productDetailId: item.productDetailId,
@@ -155,20 +287,49 @@ export class OrderService {
         },
       },
       include: {
-        orderItems: true,
+        orderItems: {
+          include: {
+            productDetail: {
+              include: {
+                image: true,
+                product: {
+                  select: {
+                    name: true,
+                    displayImage: true,
+                    vendor: true,
+                  },
+                },
+              },
+            },
+          },
+        },
         shippingAddress: true,
+        voucher: true,
       },
     });
 
-    // 2. Tạo payment với orderId vừa tạo
+    // Create payment with final amount
     await this.paymentService.createPayment({
       orderId: order.id,
       method: dto.paymentMethod,
       status: 'UNPAID',
-      amount: totalAmount,
+      amount: finalAmount,
     });
 
-    // Xóa các sản phẩm đã đặt khỏi giỏ hàng của user
+    // Apply voucher (update usage count and create UserVoucher record)
+    if (dto.voucherCode && voucherId) {
+      try {
+        await this.voucherService.applyVoucher(
+          dto.voucherCode,
+          userId,
+          order.id,
+        );
+      } catch (error) {
+        console.warn('Failed to apply voucher after order creation:', error);
+      }
+    }
+
+    // Remove ordered items from cart
     await this.prisma.cartItem.deleteMany({
       where: {
         cart: { userId },
@@ -176,26 +337,32 @@ export class OrderService {
       },
     });
 
-    // 3. Lấy payment vừa tạo
+    // Get payment information
     const payment = await this.prisma.payment.findFirst({
       where: { orderId: order.id },
     });
 
-    // 4. Trả về order kèm payment
+    // Format response with voucher information
+    const responseData: OrderResponseDto = {
+      ...order,
+      payment,
+      totalAmount: finalAmount,
+      originalAmount,
+      discountAmount,
+      voucher: voucherInfo,
+    } as unknown as OrderResponseDto;
+
     return {
       statusCode: 201,
       message: 'Order created successfully',
-      data: {
-        ...order,
-        payment,
-      } as unknown as OrderResponseDto,
+      data: responseData,
     };
   }
 
   async getOrdersByUser(
     userId: number,
   ): Promise<ApiResponse<OrderResponseDto[]>> {
-    // Lấy tất cả đơn hàng của user, bao gồm orderItems và productDetail cho từng orderItem, và payment
+    // Lấy tất cả đơn hàng của user, bao gồm orderItems và productDetail cho từng orderItem, payment, và voucher
     const orders = await this.prisma.order.findMany({
       where: { userId },
       include: {
@@ -216,12 +383,23 @@ export class OrderService {
           },
         },
         shippingAddress: true,
-        payment: true, // Thêm payment
+        payment: true,
+        voucher: {
+          select: {
+            id: true,
+            code: true,
+            name: true,
+            type: true,
+            discountType: true,
+            discountValue: true,
+            maxDiscountAmount: true,
+          },
+        },
       },
       orderBy: { createdAt: 'desc' },
     });
 
-    // Tính tổng tiền hàng + phí ship cho từng đơn hàng
+    // Tính tổng tiền hàng + phí ship cho từng đơn hàng và thông tin voucher
     const ordersWithTotal = orders.map((order) => {
       // Tổng tiền hàng = tổng (giá * số lượng) của từng orderItem
       const totalProduct = order.orderItems.reduce((sum, item) => {
@@ -232,6 +410,20 @@ export class OrderService {
         return sum + price * item.quantity;
       }, 0);
       const shippingFee = order.shippingFee ?? 0;
+
+      // Calculate discount if voucher is applied using the new function
+      const voucherData = order.voucher
+        ? {
+            type: order.voucher.type,
+            discountType: order.voucher.discountType,
+            discountValue: order.voucher.discountValue,
+            maxDiscountAmount: order.voucher.maxDiscountAmount,
+          }
+        : undefined;
+
+      const { originalAmount, discountAmount, finalAmount } =
+        this.calculateOrderAmounts(totalProduct, shippingFee, voucherData);
+
       // Format lại orderItems để trả về imageUrl, product name, displayImage
       const formattedOrderItems = order.orderItems.map((item) => ({
         ...item,
@@ -242,9 +434,12 @@ export class OrderService {
           productDisplayImage: item.productDetail.product?.displayImage || null,
         },
       }));
+
       return {
         ...order,
-        totalAmount: totalProduct + shippingFee,
+        totalAmount: finalAmount,
+        originalAmount,
+        discountAmount,
         orderItems: formattedOrderItems,
       };
     });
@@ -283,7 +478,18 @@ export class OrderService {
           },
         },
         shippingAddress: true,
-        payment: true, // Thêm payment
+        payment: true,
+        voucher: {
+          select: {
+            id: true,
+            code: true,
+            name: true,
+            type: true,
+            discountType: true,
+            discountValue: true,
+            maxDiscountAmount: true,
+          },
+        },
       },
       orderBy: { createdAt: 'desc' },
     });
@@ -298,6 +504,20 @@ export class OrderService {
         return sum + price * item.quantity;
       }, 0);
       const shippingFee = order.shippingFee ?? 0;
+
+      // Calculate discount if voucher is applied using the new function
+      const voucherData = order.voucher
+        ? {
+            type: order.voucher.type,
+            discountType: order.voucher.discountType,
+            discountValue: order.voucher.discountValue,
+            maxDiscountAmount: order.voucher.maxDiscountAmount,
+          }
+        : undefined;
+
+      const { originalAmount, discountAmount, finalAmount } =
+        this.calculateOrderAmounts(totalProduct, shippingFee, voucherData);
+
       // Format lại orderItems để trả về imageUrl, product name, displayImage
       const formattedOrderItems = order.orderItems.map((item) => ({
         ...item,
@@ -308,9 +528,12 @@ export class OrderService {
           productDisplayImage: item.productDetail.product?.displayImage || null,
         },
       }));
+
       return {
         ...order,
-        totalAmount: totalProduct + shippingFee,
+        totalAmount: finalAmount,
+        originalAmount,
+        discountAmount,
         orderItems: formattedOrderItems,
         userName: order.user?.name || null,
         phoneNumber: order.shippingAddress?.phoneNumber || null,
@@ -326,7 +549,7 @@ export class OrderService {
   async getOrderById(
     orderId: number,
   ): Promise<ApiResponse<OrderResponseDto | null>> {
-    // Lấy order theo id, bao gồm orderItems, productDetail, và payment
+    // Lấy order theo id, bao gồm orderItems, productDetail, payment, và voucher
     const order = await this.prisma.order.findUnique({
       where: { id: orderId },
       include: {
@@ -349,6 +572,17 @@ export class OrderService {
         },
         shippingAddress: true,
         payment: true,
+        voucher: {
+          select: {
+            id: true,
+            code: true,
+            name: true,
+            type: true,
+            discountType: true,
+            discountValue: true,
+            maxDiscountAmount: true,
+          },
+        },
       },
     });
     if (!order) {
@@ -367,6 +601,20 @@ export class OrderService {
       return sum + price * item.quantity;
     }, 0);
     const shippingFee = order.shippingFee ?? 0;
+
+    // Calculate discount if voucher is applied using the new function
+    const voucherData = order.voucher
+      ? {
+          type: order.voucher.type,
+          discountType: order.voucher.discountType,
+          discountValue: order.voucher.discountValue,
+          maxDiscountAmount: order.voucher.maxDiscountAmount,
+        }
+      : undefined;
+
+    const { originalAmount, discountAmount, finalAmount } =
+      this.calculateOrderAmounts(totalProduct, shippingFee, voucherData);
+
     // Format lại orderItems để trả về imageUrl, product name, displayImage
     const formattedOrderItems = order.orderItems.map((item) => ({
       ...item,
@@ -376,12 +624,15 @@ export class OrderService {
         productDisplayImage: item.productDetail.product?.displayImage || null,
       },
     }));
+
     return {
       statusCode: 200,
       message: 'Order fetched successfully',
       data: {
         ...order,
-        totalAmount: totalProduct + shippingFee,
+        totalAmount: finalAmount,
+        originalAmount,
+        discountAmount,
         orderItems: formattedOrderItems,
       } as unknown as OrderResponseDto,
     };
@@ -591,6 +842,156 @@ export class OrderService {
         message: 'Failed to update order status',
         error: error instanceof Error ? error.message : 'Unknown error',
         data: undefined,
+      };
+    }
+  }
+
+  async calculateOrderTotal(
+    userId: number,
+    dto: {
+      orderItems: { productDetailId: number; quantity: number }[];
+      shippingAddressId: number;
+      voucherCode?: string;
+    },
+  ): Promise<
+    ApiResponse<{
+      totalProduct: number;
+      shippingFee: number;
+      originalAmount: number;
+      discountAmount: number;
+      finalAmount: number;
+      voucher?: {
+        id: number;
+        code: string;
+        name: string;
+        discountType: string;
+        discountValue: number;
+      };
+    }>
+  > {
+    try {
+      // Validate productDetailId existence
+      const productDetailIds = dto.orderItems.map(
+        (item) => item.productDetailId,
+      );
+      const existingProductDetails = await this.prisma.productDetail.findMany({
+        where: { id: { in: productDetailIds } },
+        select: { id: true, price: true },
+      });
+
+      const existingProductDetailIds = new Set(
+        existingProductDetails.map((pd) => pd.id),
+      );
+      const invalidProductDetailIds = productDetailIds.filter(
+        (id) => !existingProductDetailIds.has(id),
+      );
+
+      if (invalidProductDetailIds.length > 0) {
+        throw new Error(
+          `Invalid productDetailId(s): ${invalidProductDetailIds.join(', ')}`,
+        );
+      }
+
+      // Calculate shipping fee
+      const shippingFeeResponse = await this.calculateShippingFee(
+        dto.shippingAddressId,
+      );
+      const shippingFee = shippingFeeResponse.data?.shippingFee ?? 0;
+
+      // Calculate total product amount
+      const totalProduct = dto.orderItems.reduce((sum, item) => {
+        const productDetail = existingProductDetails.find(
+          (pd) => pd.id === item.productDetailId,
+        );
+        const price = productDetail?.price ?? 0;
+        return sum + price * item.quantity;
+      }, 0);
+
+      let voucherData:
+        | {
+            type: string;
+            discountType: string;
+            discountValue: number;
+            maxDiscountAmount?: number | null;
+          }
+        | undefined;
+
+      // Apply voucher if provided
+      if (dto.voucherCode) {
+        try {
+          // Validate voucher - cần truyền đúng giá trị để validate
+          const voucherValidation = await this.voucherService.validateVoucher(
+            dto.voucherCode,
+            userId,
+            totalProduct + shippingFee, // Tổng đơn hàng cho validation
+            shippingFee,
+          );
+
+          if (voucherValidation.isValid) {
+            // Get voucher details
+            const voucher = await this.prisma.voucher.findUnique({
+              where: { code: dto.voucherCode },
+            });
+
+            if (voucher) {
+              voucherData = {
+                type: voucher.type,
+                discountType: voucher.discountType,
+                discountValue: voucher.discountValue,
+                maxDiscountAmount: voucher.maxDiscountAmount,
+              };
+            }
+          }
+        } catch (error) {
+          console.warn('Voucher validation failed:', error);
+          // Continue without voucher if validation fails
+        }
+      }
+
+      // Tính toán số tiền sử dụng hàm mới
+      const { originalAmount, discountAmount, finalAmount } =
+        this.calculateOrderAmounts(totalProduct, shippingFee, voucherData);
+
+      const voucherInfo = voucherData
+        ? {
+            id: 0, // Will be set properly when voucher is found
+            code: dto.voucherCode || '',
+            name: '',
+            discountType: voucherData.discountType,
+            discountValue: voucherData.discountValue,
+          }
+        : undefined;
+
+      return {
+        statusCode: 200,
+        message: 'Order total calculated successfully',
+        data: {
+          totalProduct,
+          shippingFee,
+          originalAmount,
+          discountAmount,
+          finalAmount,
+          voucher: voucherInfo,
+        },
+      };
+    } catch (error) {
+      return {
+        statusCode: 400,
+        message: 'Failed to calculate order total',
+        error:
+          error &&
+          typeof error === 'object' &&
+          'message' in error &&
+          typeof (error as { message?: unknown }).message === 'string'
+            ? (error as { message: string }).message
+            : 'Unknown error',
+        data: {
+          totalProduct: 0,
+          shippingFee: 0,
+          originalAmount: 0,
+          discountAmount: 0,
+          finalAmount: 0,
+        },
       };
     }
   }

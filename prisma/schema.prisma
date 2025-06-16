@@ -28,6 +28,16 @@ enum UserRole {
   USER
 }
 
+enum VoucherType {
+  SHIPPING
+  DISCOUNT
+}
+
+enum DiscountType {
+  PERCENTAGE
+  FIXED_AMOUNT
+}
+
 model User {
   id                Int               @id @default(autoincrement())
   email             String            @unique @db.VarChar(45)
@@ -47,6 +57,7 @@ model User {
   monthOfBirth      Int?
   yearOfBirth       Int?
   chatHistory       ChatHistory[]
+  userVouchers      UserVoucher[] // Quan hệ với UserVoucher
 }
 
 model Category {
@@ -150,8 +161,10 @@ model Order {
   requestCancelAt   DateTime?
   refundedAt        DateTime?
 
-  user    User     @relation(fields: [userId], references: [id])
-  payment Payment?
+  user      User     @relation(fields: [userId], references: [id])
+  payment   Payment?
+  voucher   Voucher? @relation(fields: [voucherId], references: [id])
+  voucherId Int?
 }
 
 model OrderItem {
@@ -257,4 +270,44 @@ model ChatHistory {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId, createdAt])
+}
+
+model Voucher {
+  id                Int          @id @default(autoincrement())
+  code              String       @unique @db.VarChar(50) // Mã voucher (VD: SHIP50, SALE20)
+  name              String       @db.VarChar(100) // Tên voucher
+  description       String?      @db.Text // Mô tả voucher
+  type              VoucherType // Loại voucher (SHIPPING/DISCOUNT)
+  discountType      DiscountType // Loại giảm giá (PERCENTAGE/FIXED_AMOUNT)
+  discountValue     Float // Giá trị giảm (20 cho 20% hoặc 50000 cho 50k)
+  maxDiscountAmount Float? // Giới hạn số tiền giảm tối đa (cho voucher %)
+  minOrderAmount    Float? // Giá trị đơn hàng tối thiểu để áp dụng
+  maxUsageCount     Int? // Số lần sử dụng tối đa (null = không giới hạn)
+  currentUsageCount Int          @default(0) // Số lần đã sử dụng
+  startDate         DateTime
+  endDate           DateTime
+  isActive          Boolean      @default(true) // Trạng thái hoạt động
+  createdAt         DateTime     @default(now())
+  updatedAt         DateTime     @updatedAt
+
+  // Relations
+  userVouchers UserVoucher[] // Danh sách user đã sử dụng
+  orders       Order[] // Danh sách order đã sử dụng voucher này
+}
+
+model UserVoucher {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  voucherId Int
+  usedAt    DateTime @default(now()) // Thời gian sử dụng
+  orderId   Int? // Order ID sử dụng voucher này
+
+  // Relations
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  voucher Voucher @relation(fields: [voucherId], references: [id], onDelete: Cascade)
+
+  // Đảm bảo mỗi user chỉ sử dụng 1 voucher 1 lần
+  @@unique([userId, voucherId])
+  @@index([userId])
+  @@index([voucherId])
 }
