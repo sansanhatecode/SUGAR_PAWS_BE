@@ -162,7 +162,14 @@ export class AuthService {
         role: user.role,
       };
       return {
-        data: { accessToken: this.jwtService.sign(payload) },
+        data: {
+          accessToken: this.jwtService.sign(payload),
+          id: user.id,
+          username: user.username,
+          email: user.email,
+          name: user.name,
+          role: user.role,
+        },
       };
     } catch (error: unknown) {
       console.error(error);
