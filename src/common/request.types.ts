@@ -3,3 +3,5 @@ import { Request } from 'express';
 export interface AuthenticatedRequest extends Request {
   user?: { userId: number; username: string; role: string };
 }
+
+export type ContextUser = { req: { user?: { role?: string } } };

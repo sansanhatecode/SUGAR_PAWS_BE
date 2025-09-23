@@ -1,0 +1,22 @@
+# ------------------------------------------------------
+# THIS FILE WAS AUTOMATICALLY GENERATED (DO NOT MODIFY)
+# ------------------------------------------------------
+
+type Query {
+  user(id: Int!): UserType!
+  users: [UserType!]!
+}
+
+type UserType {
+  dayOfBirth: Float
+  email: String!
+  gender: String
+  id: Int!
+  isVerified: Boolean!
+  monthOfBirth: Float
+  name: String!
+  phoneNumber: String
+  role: String!
+  username: String!
+  yearOfBirth: Float
+}

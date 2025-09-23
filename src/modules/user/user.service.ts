@@ -180,6 +180,7 @@ export class UserService {
 
       return user;
     } catch (error: unknown) {
+      console.error('Error in findById:', error);
       if (
         error instanceof PrismaClientKnownRequestError &&
         error.code === 'P2025'
