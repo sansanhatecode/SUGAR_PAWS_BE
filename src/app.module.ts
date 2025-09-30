@@ -27,6 +27,10 @@ import { VoucherModule } from './modules/voucher/voucher.module';
       autoSchemaFile: 'schema.gql',
       playground: true,
       sortSchema: true,
+      context: ({ req, res }: { req: Request; res: Response }) => ({
+        req,
+        res,
+      }),
     }),
     UserModule,
     AuthModule,
