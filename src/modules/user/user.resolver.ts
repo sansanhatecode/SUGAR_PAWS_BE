@@ -4,6 +4,7 @@ import { UserType } from './user.type';
 import { ForbiddenException, UseGuards } from '@nestjs/common';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 import { ContextUser } from 'src/common/request.types';
+import { UserRole } from '@prisma/client';
 
 @Resolver(() => UserType)
 export class UserResolver {
@@ -19,7 +20,7 @@ export class UserResolver {
   @Query(() => [UserType], { name: 'users' })
   async getAllUsers(@Context() context: ContextUser) {
     const user = context.req?.user;
-    if (!user || user.role !== 'ADMIN') {
+    if (!user || user.role !== UserRole.ADMIN) {
       throw new ForbiddenException('Access denied: Admins only');
     }
     return this.userService.findAll();

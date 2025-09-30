@@ -8,32 +8,23 @@ import {
 import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
 import * as bcrypt from 'bcrypt';
 import { GetUsersResponseDto } from './dto/get-users-response.dto';
-import { UserRole } from '@prisma/client';
-import { PrismaService } from 'src/prisma.service';
+
+import { UserRepository } from './user.repository';
 import { UpdateProfileDto } from './dto/update-profile.dto';
 
 @Injectable()
 export class UserService {
-  constructor(private prisma: PrismaService) {}
+  constructor(private userRepository: UserRepository) {}
 
   async create(data: Prisma.UserCreateInput): Promise<User> {
     try {
       const hashedPassword = await bcrypt.hash(data.password, 10);
-      // Tạo user trước
-      const user = await this.prisma.user.create({
-        data: {
-          ...data,
-          role: data.role as UserRole,
-          password: hashedPassword,
-        },
+      const user = await this.userRepository.create({
+        ...data,
+        password: hashedPassword,
       });
-      // Sau khi tạo user, tạo cart cho user đó
-      await this.prisma.cart.create({
-        data: {
-          userId: user.id,
-        },
-      });
-      return user; // Trả về user sau khi tạo cart thành công
+      await this.userRepository.createCartForUser(user.id);
+      return user;
     } catch (error: unknown) {
       if (error instanceof PrismaClientKnownRequestError) {
         if (error.code === 'P2002') {
@@ -52,20 +43,18 @@ export class UserService {
 
   async findAll(): Promise<GetUsersResponseDto[]> {
     try {
-      return await this.prisma.user.findMany({
-        select: {
-          id: true,
-          name: true,
-          username: true,
-          email: true,
-          role: true,
-          isVerified: true,
-          phoneNumber: true,
-          gender: true,
-          dayOfBirth: true,
-          monthOfBirth: true,
-          yearOfBirth: true,
-        },
+      return await this.userRepository.findAll({
+        id: true,
+        name: true,
+        username: true,
+        email: true,
+        role: true,
+        isVerified: true,
+        phoneNumber: true,
+        gender: true,
+        dayOfBirth: true,
+        monthOfBirth: true,
+        yearOfBirth: true,
       });
     } catch (error: unknown) {
       console.error(error);
@@ -75,9 +64,7 @@ export class UserService {
 
   async delete(id: number) {
     try {
-      return await this.prisma.user.delete({
-        where: { id },
-      });
+      return await this.userRepository.delete(id);
     } catch (error: unknown) {
       if (
         error instanceof PrismaClientKnownRequestError &&
@@ -94,21 +81,11 @@ export class UserService {
       if (!identifier) {
         throw new BadRequestException('Email or username is required');
       }
-
-      const user = await this.prisma.user.findFirst({
-        where: {
-          OR: [{ email: identifier }, { username: identifier }],
-        },
-      });
+      const user = await this.userRepository.findByEmailOrUsername(identifier);
       if (!user) {
         throw new NotFoundException('User not found');
       }
-
-      return await this.prisma.user.findFirst({
-        where: {
-          OR: [{ email: identifier }, { username: identifier }],
-        },
-      });
+      return user;
     } catch (error: unknown) {
       console.error(error);
       throw new InternalServerErrorException('Failed to fetch user');
@@ -120,10 +97,7 @@ export class UserService {
       if (data.password) {
         data.password = await bcrypt.hash(data.password as string, 10);
       }
-      return await this.prisma.user.update({
-        where: { id },
-        data,
-      });
+      return await this.userRepository.update(id, data);
     } catch (error: unknown) {
       if (
         error instanceof PrismaClientKnownRequestError &&
@@ -140,10 +114,7 @@ export class UserService {
     updateProfileDto: UpdateProfileDto,
   ): Promise<User> {
     try {
-      return await this.prisma.user.update({
-        where: { id: userId },
-        data: updateProfileDto,
-      });
+      return await this.userRepository.update(userId, updateProfileDto);
     } catch (error: unknown) {
       if (
         error instanceof PrismaClientKnownRequestError &&
@@ -157,27 +128,22 @@ export class UserService {
 
   async findById(id: number) {
     try {
-      const user = await this.prisma.user.findUnique({
-        where: { id },
-        select: {
-          id: true,
-          username: true,
-          email: true,
-          name: true,
-          role: true,
-          isVerified: true,
-          phoneNumber: true,
-          gender: true,
-          dayOfBirth: true,
-          monthOfBirth: true,
-          yearOfBirth: true,
-        },
+      const user = await this.userRepository.findById(id, {
+        id: true,
+        username: true,
+        email: true,
+        name: true,
+        role: true,
+        isVerified: true,
+        phoneNumber: true,
+        gender: true,
+        dayOfBirth: true,
+        monthOfBirth: true,
+        yearOfBirth: true,
       });
-
       if (!user) {
         throw new NotFoundException('User not found');
       }
-
       return user;
     } catch (error: unknown) {
       console.error('Error in findById:', error);
